@@ -1,0 +1,48 @@
+.profile-charts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.3rem 0;
+  margin: 1.4rem 0;
+}
+@media (max-width: 52em) {
+  .profile-charts { grid-template-columns: minmax(0,1fr); }
+}
+.report .profile-chart, .report .trend-chart {
+  position: relative;
+  min-width: 0;
+  margin: 0;
+}
+.report .profile-chart { border: 0; padding: .35rem 0; }
+.report .trend-chart {
+  margin: 1.15rem 0;
+  padding: 1rem .45rem .4rem;
+  box-shadow: 0 2px 9px #25374912;
+}
+.report figure figcaption { color: #30363b; font-size: 1rem; }
+.profile-chart img, .trend-chart img { width: 100%; height: auto; display: block; }
+.chart-strip { overflow-x: auto; }
+.chart-strip img { min-width: 30rem; }
+.chart-tip {
+  position: absolute; z-index: 3; pointer-events: none;
+  padding: .6rem .8rem; border: 1px solid #d6dde2; border-radius: .3rem;
+  background: white; box-shadow: 0 .15rem .8rem #23354430;
+  color: #353f49; font-size: .78rem; max-width: 98%; width: max-content;
+}
+.chart-tip b { display: block; margin-bottom: .2rem; }
+.chart-tip div { display: flex; justify-content: space-between; gap: .85rem; }
+.chart-tip strong { font-variant-numeric: tabular-nums; }
+.report section + section { margin-top: 2rem; padding-top: .8rem; border-top: 1px solid #e7eaed; }
+@media print { .chart-tip { display:none; } }
+
+.trend-cursor { position:absolute; pointer-events:none; border-left:1px dashed #97a6b8; }
+@media print { .trend-cursor { display:none } }
+
+.baseline-report th { width:32%; font-weight:600 }
+.baseline-report td { width:68% }
+.bmi-badge { display:inline-block; margin-left:.3rem; border-radius:.2rem; padding:.1rem .4rem; color:white; font-size:.8rem; }
+.bmi-low { background:#229954 }.bmi-medium{background:#bd7d0c}.bmi-high{background:#e74c3c}.bmi-neutral{background:#6f7c86}
+.report-institution { font-size:1.25rem; font-weight:600 }
+.report-footer { margin:1.5rem 0 0; color:#536575; border-top:1px solid #e0e5ea; padding-top:.7rem }
+
+.batch-reports > summary { font-weight:500 }
+.batch-reports[open] > form { margin-top:1.5rem }

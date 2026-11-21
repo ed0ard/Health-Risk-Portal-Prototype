@@ -1,0 +1,71 @@
+{% load portal_ui %}<section class="card category-card">
+{% if page == 'query' and request.user.is_staff %}
+<form id="record-query" class="admin-query-filter" method="get">
+  <input type="hidden" name="kind" value="{{ kind }}">
+  {% include "portal/subject.html" %}
+  <button class="primary" type="submit" form="record-query">{% t "Query Records" "查询数据" %}</button>
+</form>
+{% endif %}
+<div class="tabs">{% for key,label in kinds %}<a href="?kind={{ key }}&amp;subject={{ subject|urlencode }}" {% if kind == key %}aria-current="page"{% endif %}>{{ label }}</a>{% endfor %}</div>
+{% if page == 'entry' %}<form method="post">{% csrf_token %}<input type="hidden" name="kind" value="{{ kind }}"><div class="grid">{% if request.user.is_staff %}{% include "portal/subject.html" %}{% endif %}<label>{% t "Record Date" "记录日期" %}<input type="date" name="day" value="{{ request.POST.day|default:today }}" max="{{ today }}" required></label></div>
+
+<div class="{% if questionnaire %}questions{% else %}grid{% endif %}">{% for f in fields %}{% if questionnaire %}<fieldset><legend>{{ forloop.counter }}. {{ f.label }}</legend><div class="options">{% for val,label in f.choices %}<label><input type="radio" name="{{ f.key }}" value="{{ val }}" {% if val == f.value %}checked{% endif %} required>{{ label }}</label>{% endfor %}</div></fieldset>
+{% else %}<label>{{ f.label }}{% if f.choices %}<select name="{{ f.key }}" required><option value="">{% t "Select…" "请选择…" %}</option>{% for val,label in f.choices %}<option value="{{ val }}" {% if val == f.value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>{% else %}<input type="number" name="{{ f.key }}" min="{{ f.lo }}" max="{{ f.hi }}" step="{{ f.step }}" value="{{ f.value }}" required>{% endif %}</label>{% endif %}{% endfor %}</div>
+<label class="inline"><input type="checkbox" name="replace">{% t "Replace An Existing Record for This Date" "替换该日期的已有记录" %}</label><div class="actions"><button type="reset" class="secondary">{% t "Reset" "重置" %}</button><button class="primary">{% t "Save Record" "提交数据" %}</button></div></form>
+{% endif %}
+{% if page == 'query' %}
+  {% if request.user.is_staff %}
+
+  {% else %}<h2>{% t "Query Results" "查询结果" %}</h2>{% endif %}
+  {% if rows %}
+  <div class="scroll">
+    {% if request.user.is_staff %}
+    <table class="admin-records">
+      <thead><tr><th>{% t "Data Type" "数据类型" %}</th><th>{% t "Details" "详细信息" %}</th><th>{% t "Record Date" "记录时间" %}</th></tr></thead>
+      <tbody>{% for r in rows %}
+        <tr>
+          <td>{{ kind_label }}</td>
+          <td>
+            {% if questionnaire %}
+            <b>{{ kind_label }}</b>
+            {% for q,a,score in r.details %}<div>{% t "Question" "问题" %} {{ forloop.counter }} - {{ score }}{% t " Points" "分" %}</div>{% endfor %}
+            <strong class="record-total">{% t "Total Score" "总分" %} - {{ r.total }}</strong>
+            {% else %}
+            {% for label,value,raw in r.details %}<div><b>{{ label }}</b> - {{ value }}</div>{% endfor %}
+            {% endif %}
+          </td>
+          <td>{{ r.day }}</td>
+        </tr>
+      {% endfor %}</tbody>
+    </table>
+    {% else %}
+    <table>
+      <thead><tr><th>{% t "Date" "日期" %}</th>
+        {% if questionnaire %}<th>{% t "Total Score" "总分" %}</th><th>{% t "Details" "详细信息" %}</th>
+        {% else %}{% for f in fields %}<th>{{ f.label }}</th>{% endfor %}{% endif %}
+      </tr></thead>
+      <tbody>{% for r in rows %}
+        <tr><td>{{ r.day }}</td>
+        {% if questionnaire %}
+          <td>{{ r.total }}</td>
+          <td>
+            <button class="green small" type="button" data-dialog="detail-{{ forloop.counter }}">{% t "View Details" "查看详情" %}</button>
+            <dialog id="detail-{{ forloop.counter }}" class="questionnaire-detail">
+              <button type="button" data-close class="close" aria-label="{% t 'Close' '关闭' %}">×</button>
+              <h2>{% if kind == 'depre' %}{% t "Mood Questionnaire Details" "抑郁量表详细信息" %}{% else %}{% t "Sleep Questionnaire Details" "睡眠量表详细信息" %}{% endif %}</h2>
+              <div class="questionnaire-meta"><b>{% t "Completed On" "填写时间" %} - {{ r.day }}</b><br><b>{% t "Total Score" "总分" %} - {{ r.total }}</b></div>
+              <table><thead><tr><th>{% t "Question" "问题" %}</th><th>{% t "Answer" "答案" %}</th><th>{% t "Score" "分数" %}</th></tr></thead>
+                <tbody>{% for q,a,score in r.details %}<tr><td>{{ forloop.counter }}. {{ q }}</td><td>{{ a }}</td><td>{{ score }}</td></tr>{% endfor %}</tbody>
+              </table>
+            </dialog>
+          </td>
+        {% else %}{% for v in r.cells %}<td>{{ v }}</td>{% endfor %}{% endif %}
+        </tr>
+      {% endfor %}</tbody>
+    </table>
+    {% endif %}
+  </div>
+  {% include "portal/pager.html" %}
+  {% else %}<p>{% t "No records for this user and category." "该用户在此类别下暂无记录。" %}</p>{% endif %}
+{% endif %}
+</section>

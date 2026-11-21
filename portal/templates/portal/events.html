@@ -1,0 +1,1 @@
+{% load portal_ui %}<ul class="events">{% for dt,who,event,subject in events %}<li><time>{{ dt|local_stamp }}</time><b>{{ who }}</b> {{ event }} {% if subject %}· {{ subject }}{% endif %}</li>{% empty %}<li>{% t "No activity yet." "暂无活动。" %}</li>{% endfor %}</ul>

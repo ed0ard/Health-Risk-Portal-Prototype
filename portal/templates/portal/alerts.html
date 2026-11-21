@@ -1,0 +1,43 @@
+{% load portal_ui static %}
+{% if request.user.is_staff %}<script src="{% static 'portal/vendor/chart.umd.min.js' %}" defer></script><script src="{% static 'portal/pies.js' %}" defer></script>
+<form class="filters alert-filters">
+  <label>{% t "Analysis Year" "选择年份" %}
+    <select name="year">{% for y in years %}<option {% if y == year %}selected{% endif %}>{{ y }}</option>{% empty %}<option>{{ year }}</option>{% endfor %}</select>
+  </label>
+  <button class="primary">{% t "Analyze" "开始分析" %}</button>
+</form>
+<div class="population-alerts">
+  {% for c in cards %}
+  <section class="card population-card">
+    <h2>{{ c.title }}</h2>
+    <div class="risk-summary"><span>{{ c.summary_label }}</span><strong>{{ c.summary }}</strong></div>
+    <ul class="bands">{% for r in c.rows %}
+      <li><b>{{ r.label }}{% if r.range %} ({{ r.range }}){% endif %}</b><span>{{ r.count }} {% t "People" "人" %} ({{ r.percent }})</span></li>
+    {% endfor %}</ul>
+    {% if c.count %}<figure class="pie-panel">
+      <div class="pie-canvas"><canvas data-pie="{{ c.chart }}" aria-label="{{ c.title }}" role="img"></canvas></div>
+</figure>{% endif %}
+    <p class="sub">{{ c.count }} {% t "People Assessed" "人纳入评估" %}</p>
+  </section>
+  {% endfor %}
+</div>
+{% else %}
+<section class="card assessment-panel">
+  <h2>{% t "Your Health Risk Assessment" "您的健康风险评估" %}</h2>
+  <p>{% t "Results from your latest available health records." "以下是根据您的最新健康数据生成的风险评估结果。" %}</p>
+  {% for c in cards %}
+  <article class="assessment tone-{{ c.tone|default:'neutral' }}">
+    <h3>{{ c.title }}</h3>
+    {% if c.result %}
+    <strong class="risk-result">{{ c.result }}</strong>
+    <p class="interpretation">{% if c.trained %} {% endif %}{{ c.guide }}
+    {% if c.bp_reference %}<a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC11937835/#T6" target="_blank" rel="noopener">{% t "2024 Chinese Hypertension Guideline" "中国高血压防治指南（2024年修订版）" %}</a>{% endif %}</p>
+    <div class="record-meta">{% t "Record Date" "记录日期" %} - <time>{{ c.day|date:"Y-m-d" }}</time><br>{% t "Assessed" "评估时间" %} - <time>{{ assessed_at|local_stamp }}</time></div>
+    {% else %}<p>{% t "No matching records for assessment." "暂无符合条件的评估记录。" %}</p>{% endif %}
+    {% if c.observation %}<p class="observed tone-{{ c.observation.3 }}">{% t "Latest Observation" "最近实测" %} - {{ c.observation.1 }} - {{ c.observation.2 }}</p>{% endif %}
+    {% if c.follow_up %}<p class="follow-up">{{ c.follow_up }}</p>{% endif %}
+  </article>
+  {% endfor %}
+  <div class="actions"><a href="{% url 'portal' 'alerts' %}" class="primary">{% t "Refresh Data" "刷新数据" %}</a></div>
+</section>
+{% endif %}

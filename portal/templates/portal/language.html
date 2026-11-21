@@ -1,0 +1,6 @@
+{% load portal_ui %}
+<form class="language" data-language="{{ lang }}" action="{% url 'language' %}" method="post" aria-label="{% t 'Language' '语言' %}">
+  {% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}">
+  <button lang="en" name="lang" value="en" aria-pressed="{% if lang == 'en' %}true{% else %}false{% endif %}">English</button>
+  <button lang="zh-CN" name="lang" value="zh" aria-pressed="{% if lang == 'zh' %}true{% else %}false{% endif %}">中文</button>
+</form>
