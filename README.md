@@ -25,7 +25,10 @@ Screening and education only. Results are not medical diagnoses and must not rep
 <img width="2550" height="1233" alt="user-health-alert" src="https://github.com/user-attachments/assets/97a6e65e-b85b-4746-a696-b0401b178e0c" /><br>
 
 * Download an A4 PDF health report.  
-<img width="476" height="673" alt="health-report_1" src="https://github.com/user-attachments/assets/78dac306-936e-4d63-8d74-0e5a12e30cc9" /><img width="476" height="673" alt="health-report_2" src="https://github.com/user-attachments/assets/9d316241-44e0-4388-a86e-4a9b6daf1895" />  
+<figure class="half">
+  <img width="476" height="673" alt="health-report_1" src="https://github.com/user-attachments/assets/78dac306-936e-4d63-8d74-0e5a12e30cc9" />
+  <img width="476" height="673" alt="health-report_2" src="https://github.com/user-attachments/assets/9d316241-44e0-4388-a86e-4a9b6daf1895" />
+</figure>
 
 
 ### For administrators
