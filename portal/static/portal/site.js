@@ -1,6 +1,33 @@
 function initPortal() {
 window.portalController?.abort();
 window.portalController=new AbortController();
+// Navigation reloads the inner workspace, whose scroll position browsers do not restore.
+if (document.querySelector("[data-user-management]")) {
+  const key = "health-user-list-scroll";
+  const workspace = document.querySelector(".workspace");
+  try {
+    const saved = JSON.parse(sessionStorage.getItem(key) || "null");
+    sessionStorage.removeItem(key);
+    if (saved && saved.path === location.pathname && Date.now() - saved.time < 120000) {
+      requestAnimationFrame(() => {
+        if (workspace) workspace.scrollTop = saved.top;
+        else window.scrollTo(0, saved.top);
+      });
+    }
+  } catch (_) { /* Storage may be unavailable; ordinary navigation still works. */ }
+  function rememberScroll(event) {
+    if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    try {
+      sessionStorage.setItem(key, JSON.stringify({
+        path:location.pathname, top:workspace ? workspace.scrollTop : window.scrollY, time:Date.now()
+      }));
+    } catch (_) { /* Do not prevent the requested action when storage is disabled. */ }
+  }
+  document.querySelectorAll("form[data-preserve-scroll]").forEach(form =>
+    form.addEventListener("submit", rememberScroll));
+  document.querySelectorAll("a[data-preserve-scroll], [data-user-management] .pager a").forEach(link =>
+    link.addEventListener("click", rememberScroll));
+}
 const settingsTabs = document.querySelectorAll("[data-settings-tab]");
 function selectSettings(name) {
   settingsTabs.forEach(tab => tab.setAttribute("aria-selected", String(tab.dataset.settingsTab === name)));
@@ -10,41 +37,8 @@ function selectSettings(name) {
 settingsTabs.forEach(tab => tab.addEventListener("click",()=>selectSettings(tab.dataset.settingsTab)));
 if (settingsTabs.length) {
   const saved = sessionStorage.getItem("health-settings-tab");
-  selectSettings(["accounts","models","reset"].includes(saved)?saved:"accounts");
+  selectSettings([...settingsTabs].some(tab => tab.dataset.settingsTab === saved)?saved:"accounts");
 }
-const search = document.querySelector(".member-search input");
-if (search) {
-  const names=JSON.parse(document.getElementById("member-names").textContent);
-  const matches=document.getElementById("member-matches");
-  function choose(name) { search.value=name; matches.hidden=true; search.setAttribute("aria-expanded","false"); search.focus(); }
-  function suggest() {
-    matches.replaceChildren();
-    const value=search.value.trim().toLowerCase();
-    if (!value) {matches.hidden=true; search.setAttribute("aria-expanded","false"); return;}
-    names.filter(name=>name.toLowerCase().includes(value)).slice(0,12).forEach((name,index)=>{
-      const option=document.createElement("button");
-      option.type="button"; option.setAttribute("role","option"); option.textContent=name;
-      option.addEventListener("click",()=>choose(name));
-      option.addEventListener("keydown",event=>{
-        if(event.key==="ArrowDown"){event.preventDefault();option.nextElementSibling?.focus();}
-        if(event.key==="ArrowUp"){event.preventDefault();(option.previousElementSibling||search).focus();}
-        if(event.key==="Escape"){matches.hidden=true;search.focus();}
-      });
-      matches.append(option);
-    });
-    matches.hidden=!matches.children.length;
-    search.setAttribute("aria-expanded",String(!matches.hidden));
-  }
-  search.addEventListener("input",suggest);
-  search.addEventListener("keydown",event=>{
-    if(event.key==="ArrowDown"){event.preventDefault();matches.querySelector("button")?.focus();}
-    if(event.key==="Escape"){matches.hidden=true;search.setAttribute("aria-expanded","false");}
-  });
-  document.addEventListener("pointerdown",event=>{
-    if(!search.parentElement.contains(event.target)){matches.hidden=true;search.setAttribute("aria-expanded","false");}
-  },{signal:window.portalController.signal});
-}
-
 const menu = document.querySelector(".menu");
 menu?.addEventListener("click", () => {
   const open = document.querySelector("#navigation").classList.toggle("open");
@@ -62,11 +56,11 @@ language?.addEventListener("submit", async event => {
   language.dataset.busy = "true";
   const previous = language.dataset.language;
   language.dataset.language = choice.value;
-  const fields = [...document.querySelectorAll("input,select,textarea")].filter(field =>
-    field.name && field.name !== "csrfmiddlewaretoken" && !field.closest(".language"));
-  const saved = fields.map(field => ({
-    name:field.name, type:field.type, value:field.value, checked:field.checked
-  }));
+  // Preserve editable values by form and field position, never overwrite hidden actions.
+  const saved = [...document.forms].map(form => [...form.elements].map(field =>
+    field.matches("input:not([type=hidden]),select,textarea") && !form.matches(".language")
+      ? {value:field.value, checked:field.checked} : null));
+  const successOpen = !!document.querySelector("[data-success][open]");
   const workspace = document.querySelector(".workspace");
   const scroll = workspace?.scrollTop || window.scrollY;
   const anchor = workspace && [...workspace.querySelectorAll("section,h3,figure")].find(node =>
@@ -83,14 +77,15 @@ language?.addEventListener("submit", async event => {
     document.documentElement.lang = translated.documentElement.lang;
     Object.values(window.Chart?.instances || {}).forEach(chart => chart.destroy());
     document.body.replaceWith(translated.body);
-    for (const state of saved) {
-      const matches = [...document.getElementsByName(state.name)];
-      for (const field of matches) {
-        if (state.type === "radio" || state.type === "checkbox") {
-          if (field.value === state.value) field.checked = state.checked;
-        } else field.value = state.value;
-      }
-    }
+    if (!successOpen) document.querySelectorAll("[data-success]").forEach(dialog => dialog.remove());
+    [...document.forms].forEach((form, formIndex) => {
+      [...form.elements].forEach((field, fieldIndex) => {
+        const state = saved[formIndex]?.[fieldIndex];
+        if (!state || field.type === "hidden") return;
+        if (field.type === "radio" || field.type === "checkbox") field.checked = state.checked;
+        else field.value = state.value;
+      });
+    });
     initPortal();
     for (const script of document.body.querySelectorAll("script[src]")) {
       const fresh = document.createElement("script");
@@ -131,7 +126,10 @@ document.querySelectorAll("[data-dialog]").forEach(button => {
 document.querySelectorAll("[data-close]").forEach(button => {
   button.addEventListener("click", () => button.closest("dialog").close());
 });
-document.querySelector("[data-success]")?.showModal();
+document.querySelectorAll("[data-success]").forEach(dialog => {
+  dialog.addEventListener("close", () => dialog.remove(), {once:true});
+  dialog.showModal();
+});
 document.querySelector("[data-training]")?.addEventListener("submit", async event => {
   event.preventDefault();
   const form = event.currentTarget;

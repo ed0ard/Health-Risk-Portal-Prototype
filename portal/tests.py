@@ -107,6 +107,56 @@ class PortalTest(TestCase):
         self.assertContains(self.client.post("/",data),"Check your username")
         self.assertEqual(self.client.post("/",dict(data,password="Changed1!")).status_code,302)
 
+    def test_user_search_pagination_and_actions(self):
+        User = get_user_model()
+        User.objects.bulk_create([User(username=f"search-{i:02}") for i in range(35)])
+        self.client.force_login(self.staff)
+        response = self.client.get("/health/users/?q=search-&p=2")
+        self.assertEqual(response.context["pager"].paginator.count, 35)
+        self.assertEqual(len(response.context["accounts"]), 5)
+        self.assertContains(response, "?p=1&amp;q=search-")
+        response = self.client.post("/health/users/?q=search-&p=2",
+                                    {"action":"toggle", "username":"search-34"})
+        self.assertRedirects(response, "/health/users/?q=search-&p=2")
+        self.assertFalse(User.objects.get(username="search-34").is_active)
+        self.assertContains(self.client.get("/health/users/?q=missing"), "No matching users.")
+        self.assertEqual(self.client.get("/health/users/?p=invalid").status_code, 200)
+        self.assertEqual(self.client.get("/health/users/?p=999").status_code, 200)
+        self.assertNotContains(self.client.get("/health/settings/"), "Reset User Password")
+
+    def test_password_reset_permissions_and_validation(self):
+        from .models import LoginAttempt
+        LoginAttempt.objects.create(username=self.member.username, failures=5)
+        data = {"action":"reset", "username":self.member.username, "password":"Reset12!"}
+        self.client.force_login(self.member)
+        self.assertEqual(self.client.post("/health/users/", data).status_code, 403)
+        self.client.force_login(self.staff)
+        for change in ({"password":"bad"}, {"username":"missing"}, {"username":self.staff.username}):
+            self.assertContains(self.client.post("/health/users/", dict(data, **change)), "Select a member")
+        self.member.refresh_from_db()
+        self.assertTrue(self.member.check_password("Member12!"))
+        self.assertTrue(LoginAttempt.objects.filter(username=self.member.username).exists())
+        response = self.client.post("/health/users/", data, follow=True)
+        self.assertContains(response, "Password reset and account unlocked.")
+        self.member.refresh_from_db()
+        self.assertTrue(self.member.check_password("Reset12!"))
+        self.assertFalse(LoginAttempt.objects.filter(username=self.member.username).exists())
+        self.assertTrue(Activity.objects.filter(event="password", subject=self.member.username).exists())
+
+    def test_success_messages_are_consumed_before_language_switch(self):
+        self.client.force_login(self.staff)
+        response = self.client.post("/health/settings/", {"section":"accounts", "session_minutes":"30"}, follow=True)
+        self.assertContains(response, "data-success")
+        response = self.client.post("/language/", {"lang":"zh", "next":"/health/settings/"}, follow=True)
+        self.assertNotContains(response, "data-success")
+        fit = Fit.objects.create(kind="hbp", start=date(2023,1,1), end=date(2023,1,1), samples=1, artifact={})
+        response = self.client.get(f"/health/training/?model=hbp&completed={fit.pk}", follow=True)
+        self.assertRedirects(response, "/health/training/?model=hbp")
+        self.assertContains(response, "data-success")
+        self.assertNotContains(response, f"completed={fit.pk}")
+        response = self.client.post("/language/", {"lang":"en", "next":"/health/training/?model=hbp"}, follow=True)
+        self.assertNotContains(response, "data-success")
+
     def test_personal_reading_categories_and_tabs(self):
         for s,d,expected in [(110,72,0),(120,75,1),(115,80,1),(140,88,2),(125,100,3),
                              (180,75,4),(138,110,4),(85,53,5)]:
@@ -147,7 +197,7 @@ class PortalTest(TestCase):
             self.client.post("/",{"username":"1","password":"wrong"})
         self.assertContains(self.client.post("/",{"username":"1","password":"Member12!"}),"Too many failed attempts")
         self.client.force_login(self.staff)
-        self.assertEqual(self.client.post("/health/settings/",{"section":"reset","username":self.member.username,
+        self.assertEqual(self.client.post("/health/users/",{"action":"reset","username":self.member.username,
             "password":"NewPass1!"}).status_code,302)
         self.client.post("/signout/")
         self.assertEqual(self.client.post("/",{"username":"1","password":"NewPass1!"}).status_code,302)

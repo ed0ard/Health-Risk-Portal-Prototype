@@ -281,7 +281,8 @@ def alert_data(request,ctx,loc):
             day,band,value,_ = own
             label = rows[band]["label"]
             if kind=="depre":
-                result = label
+                score = sum(dates[(request.user.username, day)]["depre"].values())
+                result = f"{score} - {label}"
             else:
                 result = f"{value} - {label}"
             card.update(result=result,tone=bands[band][2],day=day,trained=bool(fit))
@@ -311,7 +312,10 @@ def training(request,ctx,loc,params):
     ctx.update(model=model,models=[(k,loc(*v)) for k,v in MODEL_NAMES.items()],fits=Fit.objects.filter(kind=model)[:10])
     ctx["model_storage"] = str(settings.DATABASES["default"]["NAME"]) + " / portal_fit"
     completed = params.get("completed","")
-    ctx["completed"] = completed.isdigit() and Fit.objects.filter(pk=completed,kind=model).exists()
+    if request.method == "GET" and "completed" in params:
+        if completed.isdigit() and Fit.objects.filter(pk=completed,kind=model).exists():
+            messages.success(request,loc("Training completed. The fitted model has been saved.","训练完成，已保存模型。"))
+        return go("training",model=model)
     module = "sklearn" if model=="hbp" else "xgboost"
     ctx.update(original_name="Random Forest" if model=="hbp" else "XGBoost",original_ready=find_spec(module) is not None)
     if request.method != "POST":
@@ -361,17 +365,35 @@ def accounts(request,page,ctx,loc):
             messages.success(request,loc("Password updated.","密码已更新。"))
             return redirect("portal",page="home")
     elif page=="users":
-        ctx["accounts"]=User.objects.order_by("username")
+        search = request.GET.get("q", "").strip()
+        query = User.objects.order_by("username", "pk")
+        if search:
+            query = query.filter(username__icontains=search)
+        pager = Paginator(query, 30).get_page(request.GET.get("p"))
+        ctx.update(accounts=pager.object_list, pager=pager, user_search=search,
+                   user_query=urlencode({"q": search}))
         if request.method=="POST":
             name=request.POST.get("username","").strip()
             password=request.POST.get("password","")
             with transaction.atomic():
                 if request.POST.get("action")=="toggle":
-                    user=User.objects.filter(username=name,is_staff=False).first()
+                    user=User.objects.filter(username=name,is_staff=False,is_superuser=False).first()
                     if user:
                         user.is_active=not user.is_active
                         user.save(update_fields=["is_active"])
                     else: raise Http404
+                elif request.POST.get("action")=="reset":
+                    user=User.objects.filter(username=name,is_staff=False,is_superuser=False).first()
+                    if not user or not good_password(password):
+                        ctx["error"]=loc("Select a member and enter a valid new password.","请选择普通用户并输入符合要求的新密码。")
+                        return
+                    user.set_password(password)
+                    user.save(update_fields=["password"])
+                    LoginAttempt.objects.filter(username=user.username).delete()
+                    log(request,"password",name)
+                    messages.success(request,loc("Password reset and account unlocked.","密码已重置，登录锁定已解除。"))
+                elif request.POST.get("action", "create") != "create":
+                    raise Http404
                 elif not re.fullmatch(r"[\w.@+-]{1,150}",name) or not good_password(password):
                     ctx["error"]=loc("Check the username and password format.","请检查用户名与密码格式。")
                     return
@@ -383,7 +405,7 @@ def accounts(request,page,ctx,loc):
                     user.set_password(password)
                     user.save()
                 log(request,"users",name)
-            return redirect("portal",page=page)
+            return go("users",q=search,p=pager.number)
     elif page=="logs":
         query = Activity.objects.select_related("actor").all()
         start, end = request.GET.get("start",""), request.GET.get("end","")

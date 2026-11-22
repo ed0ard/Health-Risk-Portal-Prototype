@@ -19,6 +19,9 @@ label{display:block;font-weight:500}label+.hint{margin-top:0}h1,h2,h3,p{margin-t
 @media(max-width:54.6875em){.menu{display:inline-block;background:transparent;font-size:1.25rem;margin-right:0.5rem}.topbar{gap:0.5rem}.tools{width:100%;flex-wrap:wrap}.brand{font-size:1.15rem}.username{margin-left:auto}.shell{display:block}.shell nav{display:none}.shell nav.open{display:block}.grid,.radars{grid-template-columns:1fr}.login-card{padding:1.875rem 1.5625rem}.workspace{padding:1rem}.card{padding:1rem}.tiles{gap:0.5625rem}.tile{margin-bottom:0.75rem}.tabs a{padding:0.5rem}.actions{gap:0.4375rem}}
 @media print{.topbar,nav,.section-title,.filters,.report-head a,.profiles summary{display:none}.shell,.workspace{display:block;padding:0}.report{border:0;box-shadow:none}.report figure,table tr{break-inside:avoid}}
 
+/* Firefox opts out of its native reveal button with textfield, not none.
+   See mozilla/gecko-dev layout/forms/nsTextControlFrame.cpp. */
+.password-wrap input { -moz-appearance:textfield; appearance:textfield }
 .password-wrap input::-ms-reveal { display:none }
 .password-wrap input:placeholder-shown + .eye { visibility:hidden }
 .password-card { margin-inline:auto }
@@ -153,3 +156,18 @@ dialog [data-close]:focus-visible { outline:2px solid var(--blue); outline-offse
 }
 
 .model-option{min-width:0}.model-option-head{display:flex;align-items:center;justify-content:space-between;gap:.5rem}.settings-grid .model-option-head label{margin:0;font-size:.8rem;white-space:nowrap}
+
+.tools button.outline:hover { text-decoration:underline }
+.user-search { margin:0 -.25rem .75rem; padding:.25rem; overflow-x:auto }
+.user-search-controls { display:grid; grid-template-columns:minmax(8rem,1fr) max-content max-content; align-items:center; gap:.75rem; margin-top:.375rem }
+.user-search-controls input[type=search] { min-width:0; margin-top:0 }
+.user-search-controls > button,.user-search-controls > a { white-space:nowrap }
+.user-table { table-layout:fixed; min-width:64rem }
+.user-table col { width:25% }
+.user-table th,.user-table td { text-align:left; vertical-align:middle }
+.user-table td:first-child { overflow-wrap:anywhere }
+.user-actions { display:inline-grid; grid-template-columns:9rem 5rem; align-items:center; gap:.5rem; width:max-content }
+.user-actions > * { margin:0; white-space:nowrap }
+.user-actions button { font-size:1rem; padding:.5625rem .4rem }
+.user-actions form button { width:100% }
+.user-reset label { margin-bottom:.75rem }

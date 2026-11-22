@@ -1,0 +1,42 @@
+{% load portal_ui %}
+<section class="card">
+  <h2>{% t "Create Member Account" "新增普通用户" %}</h2>
+  <form method="post">{% csrf_token %}<input type="hidden" name="action" value="create">
+    <div class="grid"><label>{% t "Username / Health Record ID" "用户名／健康档案编号" %}<input name="username" required maxlength="150"></label><label>{% t "Initial Password" "初始密码" %}<input type="password" name="password" autocomplete="new-password" required></label></div>
+    <p class="hint">{% include "portal/password_hint.html" %}</p><button class="primary">{% t "Create User" "创建用户" %}</button>
+  </form>
+</section>
+<section class="card" data-user-management>
+  <h2>{% t "User List" "用户列表" %}</h2>
+  <form method="get" class="user-search" data-preserve-scroll>
+    <label for="user-search-input">{% t "Search Username" "搜索用户名" %}</label>
+    <div class="user-search-controls">
+      <input id="user-search-input" type="search" name="q" value="{{ user_search }}" placeholder="{% t 'Enter all or part of a username' '输入完整或部分用户名' %}">
+      <button class="primary">{% t "Search" "搜索" %}</button><a class="secondary" data-preserve-scroll href="{% url 'portal' 'users' %}">{% t "Clear" "清除" %}</a>
+    </div>
+  </form>
+  <p class="hint">{% t "Total Users" "用户总数" %}: {{ pager.paginator.count }}</p>
+  <div class="scroll"><table class="user-table">
+    <colgroup><col><col><col><col></colgroup>
+    <thead><tr><th>{% t "Username" "用户名" %}</th><th>{% t "Role" "角色" %}</th><th>{% t "Status" "状态" %}</th><th>{% t "Action" "操作" %}</th></tr></thead>
+    <tbody>{% for account in accounts %}<tr>
+      <td>{{ account.username }}</td><td>{% if account.is_staff or account.is_superuser %}{% t "Administrator" "管理员" %}{% else %}{% t "Member" "普通用户" %}{% endif %}</td>
+      <td>{% if account.is_active %}{% t "Active" "已启用" %}{% else %}{% t "Disabled" "已停用" %}{% endif %}</td>
+      <td>{% if not account.is_staff and not account.is_superuser %}<div class="user-actions">
+        <button type="button" class="primary small" data-dialog="reset-user-{{ account.pk }}">{% t "Reset Password" "重置密码" %}</button>
+        <form method="post" data-preserve-scroll>{% csrf_token %}<input type="hidden" name="username" value="{{ account.username }}"><button class="secondary small" name="action" value="toggle">{% if account.is_active %}{% t "Disable" "停用" %}{% else %}{% t "Enable" "启用" %}{% endif %}</button></form>
+      </div>{% endif %}</td>
+    </tr>{% empty %}<tr><td colspan="4">{% t "No matching users." "没有匹配的用户。" %}</td></tr>{% endfor %}</tbody>
+  </table></div>
+  {% include "portal/pager.html" with page_query=user_query %}
+</section>
+{% for account in accounts %}{% if not account.is_staff and not account.is_superuser %}
+<dialog id="reset-user-{{ account.pk }}" class="user-reset" aria-labelledby="reset-title-{{ account.pk }}">
+  <h2 id="reset-title-{{ account.pk }}">{% t "Reset User Password" "重置普通用户密码" %}</h2><p>{{ account.username }}</p>
+  <form method="post">{% csrf_token %}<input type="hidden" name="action" value="reset"><input type="hidden" name="username" value="{{ account.username }}">
+    <label>{% t "New Password" "新密码" %}<input type="password" name="password" autocomplete="new-password" required></label>
+    <p class="hint">{% include "portal/password_hint.html" %}</p>
+    <div class="actions"><button type="button" class="secondary" data-close>{% t "Cancel" "取消" %}</button><button class="primary">{% t "Reset Password and Unlock" "重置密码并解锁" %}</button></div>
+  </form>
+</dialog>
+{% endif %}{% endfor %}

@@ -1,13 +1,12 @@
 from datetime import date
 
 from django.contrib import messages
-from django.contrib.auth import get_user_model
 from django.db import transaction
 from django.shortcuts import redirect
 from django.utils import timezone
 
 from .catalog import MODEL_NAMES
-from .models import Activity, Fit, LoginAttempt
+from .models import Activity, Fit
 
 
 def settings_page(request, ctx, loc, options):
@@ -18,7 +17,6 @@ def settings_page(request, ctx, loc, options):
              fits=[fit for fit in Fit.objects.filter(kind=kind) if fit.available])
         for kind,name in MODEL_NAMES.items()
     ]
-    ctx["member_names"] = list(get_user_model().objects.filter(is_staff=False).order_by("username").values_list("username",flat=True))
     if request.method != "POST":
         return
     action = request.POST.get("section","activity")
@@ -32,16 +30,6 @@ def settings_page(request, ctx, loc, options):
                         raise ValueError
                     setattr(options,name,value)
                 options.save(update_fields=list(fields))
-            elif action=="reset":
-                from .views import good_password
-                user=get_user_model().objects.filter(username=request.POST.get("username",""),is_staff=False).first()
-                password=request.POST.get("password","")
-                if not user or not good_password(password):
-                    raise ValueError
-                user.set_password(password)
-                user.save(update_fields=["password"])
-                LoginAttempt.objects.filter(username=user.username).delete()
-                Activity.objects.create(actor=request.user,event="password",subject=user.username)
             elif action=="models":
                 selected={}
                 for kind in MODEL_NAMES:

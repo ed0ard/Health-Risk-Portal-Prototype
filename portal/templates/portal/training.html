@@ -13,4 +13,3 @@
 <dt>{% t "Saved Model" "模型保存位置" %}</dt><dd>{% if fit.artifact.path %}{{ fit.artifact.path }}{% else %}{{ model_storage }} / #{{ fit.pk }}{% endif %}</dd>
 {% if model == 'age' %}<dt>{% t "Explained Variance" "解释方差比例" %}</dt><dd>{% for n in fit.artifact.variance %}{{ n|floatformat:3 }} {% endfor %}</dd>{% endif %}</dl></div>
 {% empty %}<p>{% t "No saved runs for this model." "此模型暂无训练记录。" %}</p>{% endfor %}</section>
-{% if completed %}<dialog data-success><h2>{% t "Training Completed" "训练完成" %}</h2><p>{% t "The model was saved successfully." "模型已成功保存。" %}</p><button class="primary" type="button" data-close>{% t "OK" "确定" %}</button></dialog>{% endif %}
