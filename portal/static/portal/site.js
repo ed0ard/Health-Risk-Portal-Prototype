@@ -32,11 +32,14 @@ const settingsTabs = document.querySelectorAll("[data-settings-tab]");
 function selectSettings(name) {
   settingsTabs.forEach(tab => tab.setAttribute("aria-selected", String(tab.dataset.settingsTab === name)));
   document.querySelectorAll("[data-settings-panel]").forEach(panel => panel.hidden = panel.dataset.settingsPanel !== name);
-  sessionStorage.setItem("health-settings-tab",name);
+  try { sessionStorage.setItem("health-settings-tab",name); }
+  catch (_) { /* Tabs still work when browser storage is unavailable. */ }
 }
 settingsTabs.forEach(tab => tab.addEventListener("click",()=>selectSettings(tab.dataset.settingsTab)));
 if (settingsTabs.length) {
-  const saved = sessionStorage.getItem("health-settings-tab");
+  let saved;
+  try { saved = sessionStorage.getItem("health-settings-tab"); }
+  catch (_) { /* Use the default tab when browser storage is unavailable. */ }
   selectSettings([...settingsTabs].some(tab => tab.dataset.settingsTab === saved)?saved:"accounts");
 }
 const menu = document.querySelector(".menu");

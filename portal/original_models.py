@@ -56,11 +56,12 @@ def train_original(kind, cases, start, end, validate, progress, version):
         if len(counts)<2 or counts.min()<5:
             raise ValueError("folds")
         splits = StratifiedKFold(n_splits=5,shuffle=True,random_state=42)
-        for index,(training,testing) in enumerate(splits.split(x,y),1):
+        raw, validation_model = trainer.validation_setup(x, estimator)
+        for index,(training,testing) in enumerate(splits.split(raw,y),1):
             from sklearn.base import clone
-            fold_model = clone(estimator)
-            fold_model.fit(x.iloc[training],y.iloc[training])
-            scores.append(float(fold_model.score(x.iloc[testing],y.iloc[testing]))*100)
+            fold_model = clone(validation_model)
+            fold_model.fit(raw.iloc[training],y.iloc[training])
+            scores.append(float(fold_model.score(raw.iloc[testing],y.iloc[testing]))*100)
             progress(50+index*8)
     payload = {"model":estimator,"scaler":trainer.scaler,"feature_names":x.columns.tolist()}
     if classes is not None:

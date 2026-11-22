@@ -15,6 +15,61 @@ from .risk import reading_band
 
 
 class PortalTest(TestCase):
+    def test_validation_scaler_only_sees_training_folds(self):
+        from unittest.mock import patch
+        from sklearn.preprocessing import StandardScaler
+        from .learning import train
+        sizes = []
+        original_fit = StandardScaler.fit
+
+        def fit(scaler, values, *args, **kwargs):
+            sizes.append(len(values))
+            return original_fit(scaler, values, *args, **kwargs)
+
+        with patch.object(StandardScaler, 'fit', fit):
+            result = train('hbp', date(2023,1,1), date(2023,1,1), True)
+        self.assertEqual(sizes, [30, 24, 24, 24, 24, 24])
+        self.assertEqual(len(result.scores), 5)
+
+    def test_training_first_visit_without_options(self):
+        from .models import SiteOptions
+        SiteOptions.objects.all().delete()
+        self.client.force_login(self.staff)
+        response = self.client.get('/health/training/')
+        self.assertContains(response, '2020-01-01')
+
+    def test_large_model_ids_are_rejected_without_server_error(self):
+        self.client.force_login(self.staff)
+        huge = '9' * 100
+        response = self.client.post('/health/settings/', {
+            'section': 'models', 'hbp': huge, 'start': '2020-01-01',
+        })
+        self.assertContains(response, 'Check the settings')
+        self.assertEqual(self.client.get('/health/training/', {
+            'completed': huge,
+        }).status_code, 302)
+
+    def test_legacy_mood_model_skips_visit_without_questionnaire(self):
+        from unittest.mock import patch
+        import numpy as np
+        Fit.objects.create(kind='depre', start=date(2023,1,1), end=date(2023,1,1),
+                           samples=30, artifact={'classes': [0, 1, 2]})
+        for kind in ('baseline', 'psqi'):
+            record = Record.objects.get(subject='1', kind=kind)
+            Record.objects.create(subject='1', kind=kind, day=date(2024,1,1), values=record.values)
+        self.client.force_login(self.member)
+        with patch('portal.learning.predict', return_value=np.array([[.8,.1,.1]])):
+            response = self.client.get('/health/alerts/')
+        self.assertEqual(response.context['cards'][1]['day'], date(2023,1,1))
+
+    def test_training_error_preserves_validation_choice(self):
+        self.client.force_login(self.staff)
+        response = self.client.post('/health/training/', {
+            'model': 'hbp', 'start': '2024-01-01', 'end': '2020-01-01',
+        })
+        self.assertContains(response, 'Check the date range')
+        self.assertNotContains(response, 'name="validate" checked')
+
     @classmethod
     def setUpClass(cls):
         super().setUpClass()

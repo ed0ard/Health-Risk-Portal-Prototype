@@ -125,6 +125,9 @@ def train(kind, start, end, validate, method="light", progress=lambda value: Non
 def assessments(kind, dates, fit):
     latest = {}
     for (subject, day), group in dates.items():
+        # Mood results display the questionnaire score alongside the prediction.
+        if kind == "depre" and "depre" not in group:
+            continue
         if fit and fit.artifact.get("engine")=="source" and not all(t in group for t in REQUIRED[kind]):
             continue
         if fit and kind=="depre" and group.get("_sleep_version","legacy") != fit.artifact.get("form_version","legacy"):

@@ -1,3 +1,5 @@
+from datetime import date
+
 from django.conf import settings
 from django.db import models
 
@@ -8,7 +10,7 @@ class SiteOptions(models.Model):
     login_limit = models.PositiveSmallIntegerField(default=5)
     lock_minutes = models.PositiveSmallIntegerField(default=15)
     selected_models = models.JSONField(default=dict)
-    training_start = models.DateField(default="2020-01-01")
+    training_start = models.DateField(default=date(2020, 1, 1))
     training_validate = models.BooleanField(default=True)
     source_accounts_loaded = models.BooleanField(default=False)
     examples_loaded = models.BooleanField(default=False)

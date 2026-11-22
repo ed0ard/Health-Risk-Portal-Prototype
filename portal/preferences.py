@@ -34,8 +34,11 @@ def settings_page(request, ctx, loc, options):
                 selected={}
                 for kind in MODEL_NAMES:
                     value=request.POST.get(kind,"latest")
-                    if value != "latest" and not any(fit.available for fit in Fit.objects.filter(kind=kind,pk=int(value))):
-                        raise ValueError
+                    if value != "latest":
+                        model_id = int(value)
+                        if not 0 < model_id <= 2**63-1 or not any(
+                                fit.available for fit in Fit.objects.filter(kind=kind,pk=model_id)):
+                            raise ValueError
                     selected[kind]="none" if request.POST.get("toggle_models")=="1" and request.POST.get("enabled_"+kind)!="on" else value
                 options.selected_models=selected
                 options.training_start=date.fromisoformat(request.POST.get("start",""))

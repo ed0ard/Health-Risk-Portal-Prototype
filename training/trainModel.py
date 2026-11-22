@@ -137,7 +137,8 @@ class ModelTrainer:
                         cv_model = RandomForestClassifier(n_estimators=100, random_state=42)
                     else:
                         cv_model = XGBClassifier(random_state=42)
-                    scores = cross_val_score(cv_model, X, y, cv=cv, scoring='accuracy')
+                    raw, cv_model = self.validation_setup(X, cv_model)
+                    scores = cross_val_score(cv_model, raw, y, cv=cv, scoring='accuracy')
                     self.cv_scores = scores.tolist()
                     print(f'交叉验证分数: {self.cv_scores}')
                     print(f'平均准确率: {np.mean(scores):.4f} (+/- {np.std(scores) * 2:.4f})')
@@ -148,6 +149,18 @@ class ModelTrainer:
         except Exception as e:
             print(f'训练过程中发生未预期的错误: {str(e)}')
             return {'success': False, 'error': f'训练过程中发生未预期的错误: {str(e)}'}
+
+    def validation_setup(self, features, estimator):
+        """Fit preprocessing within each fold, without seeing its held-out rows."""
+        from sklearn.compose import ColumnTransformer
+        from sklearn.pipeline import make_pipeline
+
+        raw = self.data.loc[:, features.columns].copy()
+        preprocessing = ColumnTransformer(
+            [('continuous', StandardScaler(), list(self.scaler.feature_names_in_))],
+            remainder='passthrough',
+        )
+        return raw, make_pipeline(preprocessing, estimator)
 
     def get_cv_scores(self):
         return self.cv_scores if self.cv_scores is not None else []

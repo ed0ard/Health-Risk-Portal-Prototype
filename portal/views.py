@@ -308,12 +308,14 @@ def training(request,ctx,loc,params):
     if model not in MODEL_NAMES:
         raise Http404
     opts, _ = SiteOptions.objects.get_or_create(pk=1)
-    ctx.update(training_start=opts.training_start.isoformat(), training_validate=opts.training_validate)
+    ctx.update(training_start=opts.training_start.isoformat(),
+               training_validate=params.get("validate")=="on" if request.method=="POST" else opts.training_validate)
     ctx.update(model=model,models=[(k,loc(*v)) for k,v in MODEL_NAMES.items()],fits=Fit.objects.filter(kind=model)[:10])
     ctx["model_storage"] = str(settings.DATABASES["default"]["NAME"]) + " / portal_fit"
     completed = params.get("completed","")
     if request.method == "GET" and "completed" in params:
-        if completed.isdigit() and Fit.objects.filter(pk=completed,kind=model).exists():
+        if (completed.isdecimal() and len(completed)<=19 and 0<int(completed)<=2**63-1
+                and Fit.objects.filter(pk=completed,kind=model).exists()):
             messages.success(request,loc("Training completed. The fitted model has been saved.","训练完成，已保存模型。"))
         return go("training",model=model)
     module = "sklearn" if model=="hbp" else "xgboost"
