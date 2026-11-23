@@ -219,16 +219,20 @@ def health_data(request, page, ctx, loc, params):
 def alert_data(request,ctx,loc):
     staff = request.user.is_staff
     query = Record.objects.all() if staff else Record.objects.filter(subject=request.user.username)
-    years = [d.year for d in query.dates("day","year",order="DESC")]
+    if staff:
+        from .population import eligible_years
+        years=eligible_years()
+    else:years = [d.year for d in query.dates("day","year",order="DESC")]
     try:
         year = int(request.GET.get("year",years[0] if years else timezone.localdate().year))
         if not 1 <= year <= 9999:
             raise ValueError
     except ValueError:
         raise Http404
+    if staff and year not in years:year=years[0] if years else None
     ctx.update(year=year,years=years)
     if staff:
-        dates = observations(date(year,1,1),date(year,12,31))
+        dates = observations(date(year,1,1),date(year,12,31)) if year else {}
     else:
         dates = {}
         for r in query:
@@ -466,6 +470,9 @@ def portal(request,page):
     nav=[(key,loc(*name)) for key,name in NAV.items() if key!="password" and (request.user.is_staff or key not in admin_pages)]
     ctx=dict(lang=language(request),page=page,title=loc(*NAV[page]),nav=nav,subject=select_subject(request,params),
              kind=kind,kinds=[(k,loc(*v)) for k,v in KINDS.items()],today=timezone.localdate().isoformat())
+    from .docpup_config import current as pup_config
+    ctx['docpup_settings']=pup_config()
+    if page=='entry' and request.user.is_staff and 'subject' not in params:ctx['subject']=''
     response=None
     if page in ("entry","query","report"): response=health_data(request,page,ctx,loc,params)
     elif page=="alerts": alert_data(request,ctx,loc)

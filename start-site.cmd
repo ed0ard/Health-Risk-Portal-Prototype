@@ -3,18 +3,13 @@ setlocal
 rem Resolve everything relative to this file, including paths with spaces.
 pushd "%~dp0" || exit /b 1
 set "PYTHONDONTWRITEBYTECODE=1"
+set "PYTHONUTF8=1"
 set "PIP_DISABLE_PIP_VERSION_CHECK=1"
 set "PIP_NO_INPUT=1"
 set "PY="
 if exist ".venv\Scripts\python.exe" set "PY=%CD%\.venv\Scripts\python.exe"
 if defined PY goto validate
 if defined HEALTH_PYTHON goto custom_python
-rem Keep compatibility with the original workspace environment.
-if exist "..\.venv\Scripts\python.exe" (
-    "..\.venv\Scripts\python.exe" -c "import sys; assert sys.version_info[:2] == (3, 10)" >nul 2>&1
-    if not errorlevel 1 set "PY=%CD%\..\.venv\Scripts\python.exe"
-)
-if defined PY goto validate
 py -3.10 -c "import sys; assert sys.version_info[:2] == (3, 10)" >nul 2>&1
 if not errorlevel 1 (
     py -3.10 -m venv .venv
@@ -50,23 +45,7 @@ if errorlevel 1 goto failed
 if errorlevel 1 goto failed
 
 :ready
-"%PY%" manage.py check
-if errorlevel 1 goto failed
-if /i "%~1"=="--check" goto done
-"%PY%" manage.py migrate --noinput
-if errorlevel 1 goto failed
-set "IMPORT_DATA=--import-data"
-for %%F in (table_baseline.xlsx table_hbp.xlsx table_depre.xlsx table_psqi.xlsx LoginData\User.xlsx LoginData\Admin.xlsx) do if not exist "data\source\%%F" set "IMPORT_DATA="
-if not defined IMPORT_DATA echo Source workbooks are absent or incomplete; starting without workbook import.
-"%PY%" manage.py health_setup %IMPORT_DATA%
-if errorlevel 1 goto failed
-for %%F in (1 2 3) do if not exist "data\source\model\model_%%F.pkl" goto serve
-"%PY%" manage.py import_source_models
-if errorlevel 1 goto failed
-
-:serve
-if /i "%~1"=="--prepare" goto done
-"%PY%" manage.py health_serve
+"%PY%" -m portal.bootstrap %*
 if errorlevel 1 goto failed
 
 :done

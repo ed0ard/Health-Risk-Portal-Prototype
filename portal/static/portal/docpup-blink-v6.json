@@ -1,0 +1,22 @@
+{
+  "asset": "docpup-blink-v6.png",
+  "generator": "built-in image_gen",
+  "reference": "docpup-poses-v4.png",
+  "grid": [
+    4,
+    2
+  ],
+  "playback_order": [
+    0,
+    1,
+    2,
+    1
+  ],
+  "frame_durations_ms": [
+    3000,
+    60,
+    90,
+    60
+  ],
+  "prompt": "Create a tightly registered 2D animation sprite sheet for the EXACT dog doctor in the reference. Transparent background. 4 columns by 2 rows, equal cells, no text or grid. Row 1 is a natural blink loop of the reference's first upright seated dog: OPEN eyes, relaxed HALF-CLOSED eyelids, softly CLOSED eyes, OPEN eyes. Row 2 is a natural blink loop of the reference's tilted-head seated dog: OPEN eyes, HALF-CLOSED eyelids, CLOSED eyes, OPEN eyes. CRITICAL: within each row, duplicate the exact same body, paw placement, tail, head orientation, mouth, coat, mirror, badge and stethoscope at precisely identical pixel coordinates relative to the cell. Change ONLY eyelids, not eye positions, head size, body scale, body silhouette, mouth, breathing or pose. All paws stay anchored on the SAME baseline, all mirrors on the SAME horizontal line within each row. Do not smile more during the blink; do not turn the head. No extra limbs: exactly two front paws and two hind legs. Full body same scale as reference, warm orange dog, cream face, white coat and teal shirt. Generous transparent padding but precisely equal padding in every cell. Intended for whole-frame animation, not collage or eye masks. Smooth gentle eyelid closure, not squashing the eyes or face."
+}

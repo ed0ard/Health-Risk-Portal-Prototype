@@ -60,7 +60,7 @@ body:has(.shell) { height:100dvh; overflow:hidden; display:flex; flex-direction:
 .topbar { flex:none; min-height:4.4rem }
 .shell { flex:1; min-height:0; overflow:hidden; }
 .shell nav { height:100%; overflow-y:auto; overscroll-behavior:contain }
-.workspace { overflow-y:auto; scrollbar-gutter:stable; overscroll-behavior:contain }
+.workspace { overflow-y:auto; scrollbar-gutter:auto; overscroll-behavior:contain }
 .language { width:8.2rem; flex:none }
 .language button { font-weight:700 }
 .tools > a.outline { width:8.7rem }
@@ -155,7 +155,7 @@ dialog [data-close]:focus-visible { outline:2px solid var(--blue); outline-offse
  .settings-grid > form button.primary { justify-self:start }
 }
 
-.model-option{min-width:0}.model-option-head{display:flex;align-items:center;justify-content:space-between;gap:.5rem}.settings-grid .model-option-head label{margin:0;font-size:.8rem;white-space:nowrap}
+.model-option{min-width:0}.model-option-head{display:flex;align-items:center;justify-content:space-between;gap:.5rem}.settings-grid .model-option-head label{margin:0;font-size:.8rem;white-space:nowrap}.model-option-head > span:first-child{font-weight:500}
 
 .tools button.outline:hover { text-decoration:underline }
 .user-search { margin:0 -.25rem .75rem; padding:.25rem; overflow-x:auto }

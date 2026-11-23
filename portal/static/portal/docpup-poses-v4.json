@@ -1,0 +1,21 @@
+{
+  "asset": "docpup-poses-v4.png",
+  "generator": "built-in image_gen",
+  "reference": "AI Doc Pup/2D.png",
+  "grid": [
+    4,
+    4
+  ],
+  "pairs": [
+    "idle-smile",
+    "idle-tilt",
+    "idle-rest",
+    "idle-look",
+    "reading",
+    "analyzing",
+    "accepting",
+    "rejecting"
+  ],
+  "prompt": "Production animation sprite atlas for the EXACT same Doc Pup dog doctor in the supplied reference. Preserve character identity, orange floppy ears, cream muzzle and paws, white coat over teal shirt, stethoscope and silver head mirror, same ink outline and warm shading. Transparent background, no words, no decoration. Perfect 4 columns by 4 rows equal-cell grid; full-body centered and same scale per cell with clear transparent gutters. CRITICAL ANATOMY: exactly TWO front limbs and TWO hind legs per dog, four limbs total. No duplicated resting paw when an arm moves. Do NOT raise any forelimb in the thinking or speaking poses: both front paws stay visibly grounded. Row 1: a matched idle pair smiling upright (eyes open then gentle blink); a matched idle pair head tilted left (eyes open then blink). Row 2: a matched idle pair lying down peacefully asleep (slightly different natural breath posture, never stretched); a matched idle pair seated looking to the right (ears relaxed then subtly perked). Row 3: matched speaking pair, same seated grounded-paws pose, mouth closed then slightly open; matched thinking pair, BOTH front paws grounded, eyes looking up and head subtly tilted. Row 4: matched receiving pair, EXACTLY two front paws held together in front to cup an invisible file, hind legs remain behind, no extra front paws on floor; matched polite refusing pair, EXACTLY two front paws raised palms out, hind legs behind, no additional front paws. Each pair has identical body proportions, only tiny joint or facial movement; avoid squash/stretch, distortions, extra arms, floating parts, captions and props. Intended for natural frame animation with no artificial scaling.",
+  "correction_prompt": "Edit this 4x4 transparent Doc Pup animation atlas. Preserve rows 1, 2 and 3 EXACTLY, with unchanged identity, positions, dimensions and colors. Correct ONLY the FOUR dogs in the BOTTOM ROW: each currently has extra front paws resting on the floor in addition to the two raised arms. Remove ALL resting forepaws and their extra coat sleeves below the raised arms. Reconstruct one simple rounded torso in the white coat with ONLY TWO tan hind feet supporting it. The raised left and right arms are the ONLY front limbs. Thus each bottom-row dog has exactly two raised/cupped arms and exactly two hind legs, FOUR limbs total, NEVER six. Keep first two bottom-row characters cupping both hands to receive; last two holding exactly two open palms up to refuse. Show a clear gap between the two hind feet; no additional paws between them. Keep every other pixel, all transparent gutters, the 4x4 layout, and same full character scale. No stretching, no text."
+}

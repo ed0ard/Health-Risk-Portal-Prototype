@@ -2,14 +2,25 @@
 <div class="tabs settings-tabs" role="tablist">
 <button type="button" role="tab" aria-selected="true" data-settings-tab="accounts">{% t "Account Settings" "账号设置" %}</button>
 <button type="button" role="tab" aria-selected="false" data-settings-tab="models">{% t "Model Settings" "模型设置" %}</button>
+<button type="button" role="tab" aria-selected="false" data-settings-tab="docpup">{% t "Doc Pup Settings" "汪小医设置" %}</button>
 </div>
 <div class="settings-grid">
+<form class="card" method="post" data-settings-panel="docpup" hidden>{% csrf_token %}<input type="hidden" name="section" value="docpup">
+<h2>{% t "Doc Pup" "汪小医" %}</h2>
+<label class="inline"><input type="checkbox" name="enabled" {% if docpup_settings.enabled %}checked{% endif %}><span>{% t "Enable Doc Pup" "启用汪小医" %}</span></label>
+<label class="inline"><input type="checkbox" name="auto_read" {% if docpup_settings.auto_read %}checked{% endif %}><span>{% t "Read responses aloud automatically" "自动朗读回复" %}</span></label>
+<label class="inline"><input type="checkbox" name="auto_asr" {% if docpup_settings.auto_asr %}checked{% endif %}><span>{% t "Listen for questionnaire answers after reading questions" "读完题干后自动聆听并辅助填表" %}</span></label>
+<label>{% t "Maximum File Size (MB)" "文件大小上限（MB）" %}<input name="max_file_mb" type="number" min="1" max="100" step="1" value="{{ docpup_settings.max_file_mb }}" required></label>
+<label>{% t "Voice Clarification Rounds" "语音追问轮数" %}<input name="clarify_rounds" type="number" min="0" max="5" step="1" value="{{ docpup_settings.clarify_rounds }}" required></label>
+<label>{% t "Additional File Rounds" "文件补充轮数" %}<input name="file_rounds" type="number" min="0" max="5" step="1" value="{{ docpup_settings.file_rounds }}" required></label>
+<label>{% t "Maximum Recording Time (seconds)" "麦克风最长录音（秒）" %}<input name="mic_seconds" type="number" min="5" max="120" step="1" value="{{ docpup_settings.mic_seconds }}" required></label>
+<button class="primary">{% t "Save Doc Pup Settings" "保存汪小医设置" %}</button></form>
 
-<form class="card" method="post" data-settings-panel="accounts">{% csrf_token %}<input type="hidden" name="section" value="accounts"><h2>{% t "Account Policy" "账号设置" %}</h2>
+<form class="card" method="post" data-settings-panel="accounts">{% csrf_token %}<input type="hidden" name="section" value="accounts"><h2>{% t "Account" "账号" %}</h2>
 <label>{% t "Session Duration (minutes)" "登录有效期（分钟）" %}<input name="session_minutes" type="number" min="5" max="10080" value="{{ options.session_minutes }}" required></label>
 <label>{% t "Failed Attempts Before Lockout" "锁定前允许失败次数" %}<input name="login_limit" type="number" min="3" max="20" value="{{ options.login_limit }}" required></label>
 <label>{% t "Lockout Duration (minutes)" "锁定时长（分钟）" %}<input name="lock_minutes" type="number" min="1" max="1440" value="{{ options.lock_minutes }}" required></label><label>{% t "Active User Window (days)" "活跃用户统计范围（天）" %}<input name="active_days" type="number" min="1" max="365" value="{{ active_days }}" required></label><button class="primary">{% t "Save Account Settings" "保存账号设置" %}</button></form>
-<form class="card" method="post" data-settings-panel="models" hidden>{% csrf_token %}<input type="hidden" name="section" value="models"><input type="hidden" name="toggle_models" value="1"><h2>{% t "Model Configuration" "模型设置" %}</h2>
+<form class="card" method="post" data-settings-panel="models" hidden>{% csrf_token %}<input type="hidden" name="section" value="models"><input type="hidden" name="toggle_models" value="1"><h2>{% t "Model" "模型" %}</h2>
 {% for model in model_choices %}<div class="model-option"><span class="model-option-head"><span>{{ model.label }}</span><label class="inline"><input name="enabled_{{ model.key }}" type="checkbox" {% if model.enabled %}checked{% endif %}>{% t "Enabled" "启用" %}</label></span><select aria-label="{{ model.label }}" name="{{ model.key }}"><option value="latest" {% if model.selected == 'latest' %}selected{% endif %}>{% t "Latest Model" "最新模型" %}</option>{% for fit in model.fits %}<option value="{{ fit.pk }}" {% if model.selected == fit.pk|stringformat:'s' %}selected{% endif %}>#{{ fit.pk }} - {{ fit.created|local_stamp }}</option>{% endfor %}</select></div>{% endfor %}
 <label>{% t "Default Training Start" "默认训练开始日期" %}<input type="date" name="start" value="{{ options.training_start|date:'Y-m-d' }}" required></label><label class="inline"><input type="checkbox" name="validate" {% if options.training_validate %}checked{% endif %}>{% t "Enable Cross-validation by Default" "默认启用交叉验证" %}</label><button class="primary">{% t "Save Model Settings" "保存模型设置" %}</button></form>
 

@@ -10,12 +10,21 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-dgha#_!pe-)now0+wfjx@wo_ebc)+chd2@(3uc!g4d^26*vf^g'
+def local_secret():
+    import secrets
+    path=BASE_DIR/'.runtime/site-secret.txt'
+    path.parent.mkdir(parents=True,exist_ok=True)
+    try:
+        with path.open('x',encoding='utf-8') as output:output.write(secrets.token_urlsafe(64))
+    except FileExistsError:pass
+    return path.read_text(encoding='utf-8').strip()
+
+SECRET_KEY = os.environ.get('HEALTH_SECRET_KEY') or local_secret()
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('HEALTH_DEBUG','1') == '1'
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = os.environ.get('HEALTH_ALLOWED_HOSTS','localhost,127.0.0.1,[::1]').split(',')
 
 
 # Application definition

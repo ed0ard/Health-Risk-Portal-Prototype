@@ -45,7 +45,7 @@ SLEEP = (
 KINDS = {"baseline": ("Baseline", "基线数据"), "hbp": ("Blood Pressure", "高血压量表"),
          "depre": ("Mood Questionnaire", "抑郁量表"), "psqi": ("Sleep Questionnaire", "睡眠量表")}
 FIELDS = {
-    "baseline": (Field("age","Age","年龄",18,125), Field("gender","Sex","性别",0,1,choices=SEX),
+    "baseline": (Field("age","Age","年龄",0,125), Field("gender","Sex","性别",0,1,choices=SEX),
                  Field("height","Height (cm)","身高 (cm)",100,270,"any"), Field("weight","Weight (kg)","体重 (kg)",20,350,"any"),
                  Field("smoking","Smoking","吸烟",0,1,choices=YES), Field("drinking","Alcohol use","饮酒",0,1,choices=YES)),
     "hbp": (Field("systolic_bp","Systolic (mmHg)","收缩压 (mmHg)",40,300,"any"),

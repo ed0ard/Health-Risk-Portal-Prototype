@@ -2,9 +2,9 @@
 {% if request.user.is_staff %}<script src="{% static 'portal/vendor/chart.umd.min.js' %}" defer></script><script src="{% static 'portal/pies.js' %}" defer></script>
 <form class="filters alert-filters">
   <label>{% t "Analysis Year" "选择年份" %}
-    <select name="year">{% for y in years %}<option {% if y == year %}selected{% endif %}>{{ y }}</option>{% empty %}<option>{{ year }}</option>{% endfor %}</select>
+    <select name="year" {% if not years %}disabled{% endif %}>{% for y in years %}<option {% if y == year %}selected{% endif %}>{{ y }}</option>{% empty %}<option value="">{% t "No analyzable data" "暂无可分析数据" %}</option>{% endfor %}</select>
   </label>
-  <button class="primary">{% t "Analyze" "开始分析" %}</button>
+  <button class="primary" {% if not years %}disabled{% endif %}>{% t "Analyze" "开始分析" %}</button>
 </form>
 <div class="population-alerts">
   {% for c in cards %}
@@ -29,7 +29,7 @@
   <article class="assessment tone-{{ c.tone|default:'neutral' }}">
     <h3>{{ c.title }}</h3>
     {% if c.result %}
-    <strong class="risk-result">{{ c.result }}</strong>
+    <strong class="risk-result" data-reading-block>{{ c.result }}</strong>
     <p class="interpretation">{% if c.trained %} {% endif %}{{ c.guide }}
     {% if c.bp_reference %}<a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC11937835/#T6" target="_blank" rel="noopener">{% t "2024 Chinese Hypertension Guideline" "中国高血压防治指南（2024年修订版）" %}</a>{% endif %}</p>
     <div class="record-meta">{% t "Record Date" "记录日期" %} - <time>{{ c.day|date:"Y-m-d" }}</time><br>{% t "Assessed" "评估时间" %} - <time>{{ assessed_at|local_stamp }}</time></div>

@@ -5,6 +5,7 @@ from django.db import models
 
 
 class SiteOptions(models.Model):
+    docpup = models.JSONField(default=dict)
     active_days = models.PositiveSmallIntegerField(default=30)
     session_minutes = models.PositiveIntegerField(default=120)
     login_limit = models.PositiveSmallIntegerField(default=5)

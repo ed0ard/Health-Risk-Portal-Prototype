@@ -14,4 +14,4 @@
 {% elif page == 'alerts' %}{% include "portal/alerts.html" %}
 {% elif page == 'training' %}{% include "portal/training.html" %}
 {% elif page == 'logs' %}<section class="card"><form class="log-tools" method="get"><label>{% t "Start Date" "开始日期" %}<input type="date" name="start" value="{{ log_start }}"></label><label>{% t "End Date" "结束日期" %}<input type="date" name="end" value="{{ log_end }}"></label><button class="secondary">{% t "Filter" "筛选" %}</button><button class="primary" name="format" value="csv">{% t "Export CSV" "导出CSV日志" %}</button></form>{% include "portal/events.html" %}{% include "portal/pager.html" %}</section>
-{% else %}{% include "portal/account.html" %}{% endif %}</main></div>{% endblock %}
+{% else %}{% include "portal/account.html" %}{% endif %}</main></div>{% include "portal/docpup.html" %}{% endblock %}

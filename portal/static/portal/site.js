@@ -29,6 +29,9 @@ if (document.querySelector("[data-user-management]")) {
     link.addEventListener("click", rememberScroll));
 }
 const settingsTabs = document.querySelectorAll("[data-settings-tab]");
+document.querySelectorAll('[data-settings-panel="docpup"] > label.inline').forEach(label=>{
+  label.addEventListener('click',event=>{if(event.target===label)event.preventDefault();});
+});
 function selectSettings(name) {
   settingsTabs.forEach(tab => tab.setAttribute("aria-selected", String(tab.dataset.settingsTab === name)));
   document.querySelectorAll("[data-settings-panel]").forEach(panel => panel.hidden = panel.dataset.settingsPanel !== name);
@@ -56,6 +59,7 @@ language?.addEventListener("submit", async event => {
   }
   event.preventDefault();
   if (language.dataset.busy) return;
+  const pupPosition = window.docPup?.beforePageChange(true);
   language.dataset.busy = "true";
   const previous = language.dataset.language;
   language.dataset.language = choice.value;
@@ -80,6 +84,7 @@ language?.addEventListener("submit", async event => {
     document.documentElement.lang = translated.documentElement.lang;
     Object.values(window.Chart?.instances || {}).forEach(chart => chart.destroy());
     document.body.replaceWith(translated.body);
+    window.docPup?.mount(document.getElementById('docpup'), pupPosition);
     if (!successOpen) document.querySelectorAll("[data-success]").forEach(dialog => dialog.remove());
     [...document.forms].forEach((form, formIndex) => {
       [...form.elements].forEach((field, fieldIndex) => {

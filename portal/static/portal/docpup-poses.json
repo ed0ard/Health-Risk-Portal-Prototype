@@ -1,0 +1,8 @@
+{
+  "asset": "docpup-poses.png",
+  "generator": "built-in image_gen",
+  "reference": "AI Doc Pup/2D.png",
+  "grid": [4, 3],
+  "poses": ["idle", "listening", "thinking", "speaking", "walk-left", "walk-right", "run-left", "run-right", "accepting", "rejecting", "resting", "bow"],
+  "prompt": "Create a production 2D animation reference and sprite atlas for this exact Doc Pup dog doctor character, preserving orange floppy ears, cream muzzle, round head mirror, teal scrub shirt, white coat, stethoscope, tiny doctor badge and friendly identity. Transparent background. Clean high quality hand drawn game character art, consistent orthographic front three-quarter view. A precisely aligned 4 columns x 3 rows grid with twelve equal cells, one full body character centered in each cell, same scale, ample transparent padding, no text, no labels, no grid lines. Read left to right: row1 idle smiling, attentive listening head tilt, thinking paw near chin, speaking with open mouth. row2 walking left foot forward, walking right foot forward, running left foot forward leaning forward, running right foot forward. row3 accepting file with both paws cupped in front, refusing with both palms out, sleepy resting, happy small bow task completed. Each cell is isolated with no overlaps. Anatomically coherent paws and ears and same proportions throughout. Intended as expressive key poses and transition reference for a hierarchical head/body/arm/leg skeletal UI mascot. No additional characters or logos."
+}

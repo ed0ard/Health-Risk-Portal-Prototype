@@ -1,6 +1,6 @@
 {% load portal_ui %}
 <section class="card">
-  <h2>{% t "Create Member Account" "新增普通用户" %}</h2>
+  <h2>{% t "Create User Account" "新增普通用户" %}</h2>
   <form method="post">{% csrf_token %}<input type="hidden" name="action" value="create">
     <div class="grid"><label>{% t "Username / Health Record ID" "用户名／健康档案编号" %}<input name="username" required maxlength="150"></label><label>{% t "Initial Password" "初始密码" %}<input type="password" name="password" autocomplete="new-password" required></label></div>
     <p class="hint">{% include "portal/password_hint.html" %}</p><button class="primary">{% t "Create User" "创建用户" %}</button>
@@ -20,7 +20,7 @@
     <colgroup><col><col><col><col></colgroup>
     <thead><tr><th>{% t "Username" "用户名" %}</th><th>{% t "Role" "角色" %}</th><th>{% t "Status" "状态" %}</th><th>{% t "Action" "操作" %}</th></tr></thead>
     <tbody>{% for account in accounts %}<tr>
-      <td>{{ account.username }}</td><td>{% if account.is_staff or account.is_superuser %}{% t "Administrator" "管理员" %}{% else %}{% t "Member" "普通用户" %}{% endif %}</td>
+      <td>{{ account.username }}</td><td>{% if account.is_staff or account.is_superuser %}{% t "Administrator" "管理员" %}{% else %}{% t "User" "普通用户" %}{% endif %}</td>
       <td>{% if account.is_active %}{% t "Active" "已启用" %}{% else %}{% t "Disabled" "已停用" %}{% endif %}</td>
       <td>{% if not account.is_staff and not account.is_superuser %}<div class="user-actions">
         <button type="button" class="primary small" data-dialog="reset-user-{{ account.pk }}">{% t "Reset Password" "重置密码" %}</button>

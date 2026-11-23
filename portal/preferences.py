@@ -7,10 +7,12 @@ from django.utils import timezone
 
 from .catalog import MODEL_NAMES
 from .models import Activity, Fit
+from .docpup_config import current as pup_config, parse as parse_pup_config
 
 
 def settings_page(request, ctx, loc, options):
     ctx["options"] = options
+    ctx['docpup_settings']=pup_config(options)
     ctx["active_days"] = options.active_days
     ctx["model_choices"] = [
         dict(key=kind,label=loc(*name),enabled=options.selected_models.get(kind)!="none",selected=str(options.selected_models.get(kind,"latest")) if options.selected_models.get(kind)!="none" else "latest",
@@ -22,7 +24,14 @@ def settings_page(request, ctx, loc, options):
     action = request.POST.get("section","activity")
     try:
         with transaction.atomic():
-            if action=="accounts":
+            if action=='docpup':
+                options.docpup=parse_pup_config(request.POST)
+                options.save(update_fields=['docpup'])
+                if not options.docpup['enabled']:
+                    from .docpup import JOBS, JOBS_LOCK
+                    with JOBS_LOCK:
+                        for event in JOBS.values():event.set()
+            elif action=="accounts":
                 fields={"session_minutes":(5,10080),"login_limit":(3,20),"lock_minutes":(1,1440),"active_days":(1,365)}
                 for name,(low,high) in fields.items():
                     value=int(request.POST.get(name,getattr(options,name)))

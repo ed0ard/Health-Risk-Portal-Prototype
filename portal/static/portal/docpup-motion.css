@@ -1,0 +1,27 @@
+#docpup{z-index:9000;font-family:Inter,"Segoe UI","Microsoft YaHei",sans-serif}
+#docpup .pup-body{position:relative;height:140px;overflow:visible;outline-offset:4px}
+#docpup .pup-body>svg{visibility:hidden}
+#docpup .pup-pose{position:absolute;inset:0;display:block;transform-origin:50% 95%;--pose-x:0%;--pose-y:0%;filter:drop-shadow(0 4px 4px #15374725)}
+#docpup .pup-pose>span{position:absolute;inset:0;background-image:url('docpup-poses.png');background-size:400% 300%;background-position:var(--pose-x) var(--pose-y);background-repeat:no-repeat;will-change:transform;pointer-events:none}
+#docpup .pup-frame{clip-path:none;transform:none}
+#docpup .pup-status{width:max-content;max-width:180px;min-width:92px;margin:0 auto;padding:5px 12px;border-radius:12px;color:#366164;border:1px solid #b6dedb;background:#f6fffded;box-shadow:0 2px 12px #315c6010;font-size:11px;letter-spacing:.2px}
+#docpup .pup-bubble{right:24px;bottom:190px;width:min(370px,calc(100vw - 32px));max-height:45vh;padding:24px 24px 20px;border:1px solid #d4e9e7;background:linear-gradient(145deg,#fff 20%,#effaf8);border-radius:24px 24px 8px 24px;box-shadow:0 16px 48px #1d555222,0 3px 12px #184b4a0d;color:#244643;font-size:14px;line-height:1.8;overflow:auto;user-select:text}
+#docpup .pup-bubble:before{content:none}
+#docpup .pup-bubble p{margin:0;white-space:pre-wrap;overflow-wrap:anywhere}
+#docpup [data-pup-close]{position:absolute;top:8px;right:10px;width:26px;height:26px;padding:0;border:0;background:transparent;color:#75908e;font-size:20px;line-height:1;border-radius:50%;cursor:pointer}
+#docpup [data-pup-close]:hover{background:#dcefeb;color:#234c47}
+#docpup [data-pup-skip]{margin-top:14px;padding:6px 18px;border-radius:10px;background:#e5f3ef;border:1px solid #b6d6ce;color:#35695f;cursor:pointer}
+#docpup[data-state=processing] .pup-status:after,#docpup[data-state=analyzing] .pup-status:after{content:"";display:inline-block;width:6px;height:6px;background:#56aaa2;border-radius:50%;margin-left:6px;animation:pup-load 1s infinite alternate}
+#docpup[data-state=accepting] .pup-package{visibility:visible}
+@keyframes pup-load{to{opacity:.25}}
+@media(prefers-reduced-motion:reduce){#docpup .pup-pose,#docpup .pup-pose>span{will-change:auto}}
+#docpup .pup-body{display:block;height:128px;margin-bottom:-2px}
+#docpup .pup-bubble,#docpup .pup-bubble p{font-size:16px;line-height:1.75}
+#docpup [data-pup-close]{display:flex;align-items:center;justify-content:center;font-size:0;line-height:26px;text-align:center}
+#docpup [data-pup-close]::before,#docpup [data-pup-close]::after{content:"";position:absolute;left:50%;top:50%;width:12px;height:1.5px;background:currentColor;transform:translate(-50%,-50%) rotate(45deg);border-radius:2px}
+#docpup [data-pup-close]::after{transform:translate(-50%,-50%) rotate(-45deg)}
+#docpup[hidden]{display:none!important}
+[data-settings-panel=docpup] > label.inline{display:flex;align-items:center;width:fit-content;max-width:100%;margin:12px 0;gap:8px}
+#docpup .pup-bubble{overflow:hidden;padding:0}
+#docpup .pup-bubble-scroll{overflow-y:auto;max-height:45vh;padding:34px 24px 20px;overscroll-behavior:contain;scrollbar-gutter:stable}
+#docpup [data-pup-close]{z-index:3;background:#f5fbf9}

@@ -123,7 +123,7 @@ def baseline_rows(subject, record, loc):
     ]
 
 
-def sections(subject, loc):
+def sections(subject, loc, include_charts=True):
     result = []
     options, _ = SiteOptions.objects.get_or_create(pk=1)
     for kind, names in KINDS.items():
@@ -159,8 +159,8 @@ def sections(subject, loc):
                 rows.append(row)
         part = dict(kind=kind,title=loc(*names),headers=headers,rows=rows,series=series,baseline=baseline,
                     institution=getattr(options,"report_institution",""),footer=getattr(options,"report_footer",""))
-        part["radars"] = [radar_chart(kind,row,loc,version) for row,version in zip(rows,versions)] if questionnaire and getattr(options,"report_charts",True) else []
-        part["trend"] = trend_chart(kind,series,loc) if series and getattr(options,"report_charts",True) else None
+        part["radars"] = [radar_chart(kind,row,loc,version) for row,version in zip(rows,versions)] if include_charts and questionnaire and getattr(options,"report_charts",True) else []
+        part["trend"] = trend_chart(kind,series,loc) if include_charts and series and getattr(options,"report_charts",True) else None
         result.append(part)
     age_fit = active_fit("age")
     if age_fit:
