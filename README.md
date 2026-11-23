@@ -1,6 +1,6 @@
 # Health Risk Portal Prototype
 
-A bilingual Django application for personal health records, risk screening, population alerts, printable reports, and model training.
+A Django application for personal health records, risk screening, population alerts, printable reports, and model training.
 
 Screening and education only. Results are not medical diagnoses and must not replace professional care.
 
@@ -95,3 +95,4 @@ Python 3.10, Django 4.0, scikit-learn, XGBoost, pandas, NumPy, joblib, ReportLab
 ## Data and privacy
 
 All data in this project is demonstration data. It contains no real user information and involves no real user privacy.
+
