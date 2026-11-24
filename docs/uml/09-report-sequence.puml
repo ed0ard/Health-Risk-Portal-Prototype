@@ -1,0 +1,58 @@
+@startuml
+!include style.puml
+title Health Reports - Individual PDF and Batch ZIP
+autonumber
+actor "Member / Administrator" as User
+participant "views.portal / health_data" as View
+participant "reports.sections" as Sections
+participant "ORM + learning / original_models" as Data
+participant "reports.pdf_report\nReportLab" as PDF
+participant "In-memory ZIP" as Zip
+User -> View : /health/report/?format=pdf\nor POST format=batch, subjects=...
+View -> View : Authenticate; derive authorized subject
+alt format=batch
+  View -> View : Require staff and POST; deduplicate IDs
+  View -> Data : Verify 1..50 nonempty IDs, length <=150, records exist
+  alt invalid batch
+    View --> User : Forbidden or report page with validation error
+  else valid batch
+    loop each participant
+      View -> Sections : sections(subject, translator)
+      ref over Sections,Data : Build report sections (detail below)
+      Sections --> View : parts
+      View -> PDF : pdf_report(subject, parts, translator)
+      PDF --> View : Streaming PDF response
+      View -> Zip : Write numbered, sanitized PDF filename\nclose each PDF response
+    end
+    View -> Data : Activity(event=report, subject="")
+    View --> User : health-reports.zip attachment
+  end
+else individual HTML / PDF
+  View -> Sections : sections(authorized subject, translator)
+  group Build report sections
+    loop baseline / hbp / depre / psqi
+      Sections -> Data : Read records ordered by day\nbaseline: latest record only
+      Sections -> Sections : Build rows, BMI, questionnaire totals,\ntrend charts and version-aware radar charts
+    end
+    Sections -> Data : active_fit(age)
+    opt age model available
+      Sections -> Data : Complete four-category visits\nwith matching sleep version
+      Sections -> Data : Source model transform() or legacy predict()
+      Sections -> Sections : Append PC1 / PC2 / PC3 rows
+    end
+  end
+  Sections --> View : parts
+  alt format=pdf
+    View -> Data : Activity(event=report, subject)
+    View -> PDF : pdf_report(subject, parts, translator)
+    PDF --> User : A4 PDF attachment
+  else HTML preview
+    View --> User : Render report page
+  end
+end
+note over Sections,PDF
+  PCA output is component scores, not an age in years.
+  HTML preview does not create a report activity event.
+  Batch generation is sequential and held in memory.
+end note
+@enduml

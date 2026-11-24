@@ -17,3 +17,4 @@ pyttsx3==2.99
 edge-tts>=7.2,<8
 requests>=2.32,<3
 tokenizers>=0.13,<1
+huggingface-hub>=0.21,<3

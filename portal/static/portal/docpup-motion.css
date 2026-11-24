@@ -15,7 +15,12 @@
 #docpup[data-state=accepting] .pup-package{visibility:visible}
 @keyframes pup-load{to{opacity:.25}}
 @media(prefers-reduced-motion:reduce){#docpup .pup-pose,#docpup .pup-pose>span{will-change:auto}}
-#docpup .pup-body{display:block;height:128px;margin-bottom:-2px}
+#docpup .pup-body{display:block;width:128px;height:128px;margin:0 auto -2px}
+/* Keep the full sprite cell so every animation remains inside the hit area. */
+#docpup{pointer-events:none}
+#docpup .pup-body,#docpup .pup-bubble,#docpup .pup-status{pointer-events:auto}
+#docpup .pup-body:focus,#docpup .pup-body:focus-visible{outline:none}
+#docpup[data-dragging] .pup-body{cursor:grabbing}
 #docpup .pup-bubble,#docpup .pup-bubble p{font-size:16px;line-height:1.75}
 #docpup [data-pup-close]{display:flex;align-items:center;justify-content:center;font-size:0;line-height:26px;text-align:center}
 #docpup [data-pup-close]::before,#docpup [data-pup-close]::after{content:"";position:absolute;left:50%;top:50%;width:12px;height:1.5px;background:currentColor;transform:translate(-50%,-50%) rotate(45deg);border-radius:2px}

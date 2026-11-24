@@ -2,6 +2,6 @@
 <!doctype html>
 <html lang="{% if lang == 'zh' %}zh-CN{% else %}en{% endif %}">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{% block title %}{% t "Health Management" "健康管理系统" %}{% endblock %}</title>
-<link rel="stylesheet" href="{% static 'portal/site.css' %}?v=20261124-1"><script defer src="{% static 'portal/site.js' %}?v=20261124-3"></script>
-{% if request.user.is_authenticated %}<link rel="stylesheet" href="{% static 'portal/docpup.css' %}"><link rel="stylesheet" href="{% static 'portal/docpup-motion.css' %}?v=20261124-1">{% endif %}</head>
+<link rel="stylesheet" href="{% static 'portal/site.css' %}?v=20261124-1"><script defer src="{% static 'portal/site.js' %}?v=20261124-5"></script>
+{% if request.user.is_authenticated %}<link rel="stylesheet" href="{% static 'portal/docpup.css' %}"><link rel="stylesheet" href="{% static 'portal/docpup-motion.css' %}?v=20261124-6">{% endif %}</head>
 <body class="{% block bodyclass %}{% endblock %}">{% block body %}{% endblock %}</body></html>

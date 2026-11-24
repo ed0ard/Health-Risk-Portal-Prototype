@@ -1,0 +1,65 @@
+@startuml
+!include style.puml
+left to right direction
+title Health Risk Portal - Use Cases
+actor "Portal user" as User
+actor "Administrator" as Admin
+actor "Ollama / Qwen3" as LLM
+actor "Speech service\nEdge TTS / Windows SAPI" as Speech
+Admin --|> User
+rectangle "Health Risk Portal" {
+  usecase "Sign in / sign out" as Login
+  usecase "Switch interface language\nEnglish / Chinese" as Language
+  usecase "Change own password" as Password
+  usecase "Record health data\nbaseline / BP / mood / sleep" as Entry
+  usecase "Validate values and date" as Validate
+  usecase "Browse records\n30 records per page" as Query
+  usecase "View risk assessment\nmodel or measurement / score" as Risk
+  usecase "View health report" as Report
+  usecase "Download individual PDF" as PDF
+  usecase "Export 1-50 reports as ZIP" as Batch
+  usecase "Train RF / XGBoost / PCA\noptional five-fold validation" as Train
+  usecase "Manage member accounts\ncreate / enable / disable / reset" as Accounts
+  usecase "Configure models, sessions,\nlogin limits and Doc Pup" as Settings
+  usecase "Review / export activity log\ndate filter; CSV" as Logs
+  usecase "Inspect population overview\ncoverage / activity / availability" as Population
+  usecase "Read selected text aloud" as Read
+  usecase "Fill form from voice / file\nreview before submission" as Fill
+  usecase "Request contextual briefing" as Brief
+  usecase "Cancel assistant operation" as Cancel
+}
+User -- Login
+User -- Language
+User -- Password
+User -- Entry
+User -- Query
+User -- Risk
+User -- Report
+User -- PDF
+User -- Read
+User -- Fill
+User -- Brief
+User -- Cancel
+Admin -- Batch
+Admin -- Train
+Admin -- Accounts
+Admin -- Settings
+Admin -- Logs
+Admin -- Population
+Entry ..> Validate : <<include>>
+Fill -- LLM
+Brief -- LLM
+Read -- Speech
+note bottom of User
+  Protected operations require an authenticated session.
+  Members: subject is forced to username.
+  Administrators: may select a participant identifier.
+  Public language switching does not require sign-in.
+end note
+note bottom of Admin
+  is_staff gates training, users, settings and logs.
+  Reset / toggle only targets non-staff, non-superusers.
+  Administrative risk view aggregates an eligible year;
+  member view uses personal record history.
+end note
+@enduml

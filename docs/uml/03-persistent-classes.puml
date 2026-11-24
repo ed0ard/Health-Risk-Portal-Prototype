@@ -1,0 +1,97 @@
+@startuml
+!include style.puml
+hide circle
+title Persistent Domain Classes - Actual ORM Structure
+class "Django User" as User {
+  +id : Integer {framework primary key}
+  +username : String {unique}
+  +password : String {hashed}
+  +is_active : Boolean
+  +is_staff : Boolean
+  +is_superuser : Boolean
+  +last_login : DateTime [0..1]
+  +set_password(raw)
+  +check_password(raw) : Boolean
+}
+class Record {
+  +id : BigAutoField
+  +subject : String {maxLength=150}
+  +kind : String {maxLength=16}
+  +day : Date
+  +values : JSON
+  +form_version : String = "legacy"
+}
+class Activity {
+  +id : BigAutoField
+  +actor : User
+  +event : String {maxLength=32}
+  +subject : String = "" {blank allowed, maxLength=150}
+  +created : DateTime {auto_now_add}
+}
+class LoginAttempt {
+  +id : BigAutoField
+  +username : String {unique, maxLength=150}
+  +failures : Integer = 0 {nonnegative}
+  +locked_until : DateTime [0..1]
+}
+class SiteOptions {
+  +id : BigAutoField
+  +docpup : JSON = {}
+  +active_days : Integer = 30
+  +session_minutes : Integer = 120
+  +login_limit : Integer = 5
+  +lock_minutes : Integer = 15
+  +selected_models : JSON = {}
+  +training_start : Date = 2020-01-01
+  +training_validate : Boolean = true
+  +source_accounts_loaded : Boolean = false
+  +examples_loaded : Boolean = false
+}
+class Fit {
+  +id : BigAutoField
+  +kind : String {maxLength=16}
+  +start : Date
+  +end : Date
+  +samples : Integer {nonnegative}
+  +artifact : JSON
+  +scores : JSON = []
+  +created : DateTime {auto_now_add}
+  +/available : Boolean {readOnly}
+  +/mean_accuracy : Real [0..1] {readOnly}
+}
+Activity "0..*" --> "1" User : actor\n{FK; on_delete=CASCADE}
+Record ..> User : username convention only
+LoginAttempt ..> User : username lookup only
+SiteOptions ..> Fit : selected_models[kind]\nlogical ID reference
+note bottom of Record
+  {unique(subject, kind, day)}; index(kind, day)
+  Ordered by day DESC, id DESC.
+  kind: baseline | hbp | depre | psqi (application catalog).
+  No FK to User: identifiers may exist without accounts.
+  Record ownership is enforced by request handling.
+end note
+note bottom of Fit
+  kind: hbp | depre | age; ordered by id DESC.
+  Source artifact: engine, path, feature_names, form_version,
+  classes (classification) OR variance (PCA).
+  scores: fold accuracies in percent for the web trainer.
+  available: source path exists within BASE_DIR;
+  non-source artifacts return true without file checks.
+  mean_accuracy = average(scores), or null if empty.
+end note
+note bottom of SiteOptions
+  pk=1 is a singleton convention, not a DB constraint.
+  selected_models[kind]: latest (default) | none | Fit ID.
+  No database FK or automatic cascade for JSON model IDs.
+end note
+note bottom of LoginAttempt
+  Unknown usernames can also have attempts.
+  Time expiry is evaluated on a subsequent login request.
+  Administrator password reset deletes the matching attempt.
+end note
+legend bottom
+  Solid arrow with multiplicities: implemented foreign-key association.
+  Dashed arrow: dependency / logical lookup, not a foreign key.
+  Fields shown for Django User are a relevant subset; portal fields are complete.
+endlegend
+@enduml

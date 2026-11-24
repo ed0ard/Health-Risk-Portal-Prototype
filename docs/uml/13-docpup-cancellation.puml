@@ -1,0 +1,42 @@
+@startuml
+!include style.puml
+title Doc Pup - Concurrent Cancellation Scenario
+autonumber
+actor User
+participant "Browser" as UI
+participant "Active API request" as Work
+participant "Cancellation API request" as Cancel
+participant "JOBS + Event" as Jobs
+participant "LLM HTTP response /\nASR or TTS subprocess" as Resource
+UI ->> Work : Start task (task ID, request ID)
+Work -> Jobs : Register owner=(user.pk, session_key, task)
+Work -> Resource : Begin processing
+User -> UI : Stop / close / applicable navigation
+UI -> UI : Abort local controller; stop recording / playback
+UI -> Cancel : POST /docpup/cancel/ with same task
+Cancel -> Cancel : Require login, POST and valid task identifier
+Cancel -> Jobs : Find all Events whose key[:3] equals owner
+loop each matching event
+  Cancel -> Jobs : event.set()
+end
+loop each event with an active response
+  Cancel -> Resource : response.close()
+end
+Cancel --> UI : JSON {ok:true}
+Work -> Jobs : Observe event.is_set() / event.wait()
+alt ASR / TTS child still running
+  Work -> Resource : kill(); wait()
+else LLM streaming / extraction
+  Work -> Work : Exit on cancellation or closed-response error
+end
+Work -> Work : finally: best-effort model unload if used
+Work -> Jobs : Release acquired lock; remove request entry
+Work -> Work : Close temporary directory; clear request data
+Work -->> UI : Error response if connection still available
+note over UI,Resource
+  Cancellation is cooperative, not instantaneous rollback.
+  The cancel endpoint returns success even if no matching job remains.
+  Scope is a user + session + task, including multiple request IDs.
+  Shared cancellation requires requests to reach the same process.
+end note
+@enduml

@@ -1,0 +1,70 @@
+@startuml
+!include style.puml
+title Health Risk Portal - Components and Dependencies
+top to bottom direction
+component "Web interface\nDjango templates + vanilla JS\nChart.js; Doc Pup UI / audio" as UI
+component "HTTP routing\nconfig.urls\n/health/{page}/; /docpup/{action}/" as Routes
+package "Django application process" {
+  component "Request and access handling\nportal.views\nsignin / portal / accounts / health_data" as Views
+  component "Settings\nportal.preferences\nportal.docpup_config" as Settings
+  component "Assessment and training\nportal.learning\nactive_fit / assessments / train" as Learning
+  component "Streaming training\nportal.training_stream\ndaemon thread + Queue + NDJSON" as Stream
+  component "Original model adapter\nportal.original_models\ntrain_original / source_predictions" as Original
+  component "Training library\ntraining.trainModel.ModelTrainer\npreprocessing / validation_setup" as Trainer
+  component "Reports\nportal.reports\nsections / charts / pdf_report" as Reports
+  component "Risk and population\nportal.risk / portal.population" as Risk
+  component "Assistant API\nportal.docpup\nbrief / file / answer / asr / tts / cancel" as Pup
+  component "Answer and runtime helpers\nportal.docpup_answers\nportal.docpup_runtime" as Helpers
+  component "ORM model layer\nportal.models + Django auth/session" as ORM
+  component "Field catalog\nportal.catalog\nFIELDS / record_fields / NAV" as Catalog
+}
+component "Local inference\nOllama:11434 / Qwen3" as Ollama
+component "ASR subprocess\ndocpup_asr.py / faster-whisper" as ASR
+component "Speech subprocess\ndocpup_speech.py" as TTS
+artifact "db.sqlite3" as DB
+artifact "data/models/*.pkl\nmodel + scaler + feature names" as Models
+UI ..> Routes : HTTP requests
+Routes ..> Views : dispatch
+Routes ..> Pup : API / configuration
+Views ..> Settings
+Views ..> Learning
+Views ..> Stream
+Views ..> Reports
+Views ..> Risk
+Views ..> ORM
+Views ..> Catalog
+Stream ..> Learning
+Stream ..> ORM : log completion
+Learning ..> Original
+Learning ..> ORM
+Learning ..> Catalog
+Original ..> Trainer
+Original ..> Models : joblib write / load
+Original ..> ORM : Fit metadata
+Reports ..> Learning
+Reports ..> ORM
+Reports ..> Catalog
+Risk ..> Learning
+Risk ..> ORM
+Settings ..> ORM
+Pup ..> Views : alert_data / translator
+Pup ..> Reports : sections without charts
+Pup ..> Risk : population overview
+Pup ..> ORM : context
+Pup ..> Helpers
+Pup ..> Ollama : streaming HTTP
+Pup ..> ASR : process + temporary files
+Pup ..> TTS : process + temporary files
+ORM ..> DB : SQLite
+note bottom of Learning
+  train() currently always delegates to train_original().
+  method=light/original is accepted but does not switch trainers.
+  estimate(), predict() and embedded JSON artifacts remain
+  for legacy compatibility; they are not the current training path.
+end note
+note bottom of Trainer
+  Web adapter bypasses __init__ via __new__ and supplies data.
+  Standalone ModelTrainer uses training.database to read workbooks;
+  it writes data/model/model_{id}.pkl (singular directory).
+end note
+@enduml

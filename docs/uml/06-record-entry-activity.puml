@@ -1,0 +1,53 @@
+@startuml
+!include style.puml
+title Health Record Submission - Validation and Replacement
+start
+:Receive POST /health/entry/;
+if (Authenticated?) then (yes)
+else (no)
+  :Redirect to sign-in;
+  stop
+endif
+if (Valid page and kind?) then (yes)
+else (no)
+  :Return HTTP 404;
+  stop
+endif
+if (User is staff?) then (yes)
+  :Read submitted subject; trim to 150 characters;
+else (no)
+  :Force subject=request.user.username;
+endif
+:Parse all FIELDS[kind] values;
+:Require finite values, allowed ranges and integer steps;
+:Check BMI 11..75 for baseline;
+:Check systolic > diastolic for BP;
+:Parse ISO date; require subject and day <= today;
+if (Input valid?) then (yes)
+else (no)
+  :Render form with localized error;
+  stop
+endif
+partition "transaction.atomic()" {
+  :get_or_create Record(subject, kind, day)\nwith values and form_version=source;
+  if (Existing record?) then (yes)
+    if (Replace flag supplied?) then (yes)
+      :Update values and form_version=source;
+    else (no)
+      :Keep existing values; show replacement prompt;
+      stop
+    endif
+  else (no)
+    :Keep newly created record;
+  endif
+  :Create Activity(actor=current user,\nevent=entry, subject=participant);
+}
+:Commit; show success message;
+:Redirect to query with kind and subject;
+stop
+note right
+  Doc Pup fills browser controls only.
+  The same validation and persistence path runs
+  after the user reviews and submits the form.
+end note
+@enduml

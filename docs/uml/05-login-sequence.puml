@@ -1,0 +1,52 @@
+@startuml
+!include style.puml
+title Sign-in - Lockout, Authentication and Session Creation
+autonumber
+actor User
+participant "Browser" as Browser
+participant "views.signin" as View
+participant "ORM / SQLite" as DB
+participant "Django authentication" as Auth
+User -> Browser : Submit username and password
+Browser -> View : POST / (CSRF-protected)
+alt already authenticated
+  View --> Browser : Redirect /health/home/
+else anonymous
+  View -> DB : get_or_create SiteOptions(pk=1)
+  group transaction.atomic()
+    View -> DB : get_or_create LoginAttempt(username[:150])
+    View -> DB : select_for_update().get(pk)
+    alt locked_until > now
+      View --> Browser : Login page: retry later
+    else unlocked or lock expired
+      opt expired lock exists
+        View -> View : failures=0; locked_until=null
+      end
+      View -> Auth : authenticate(username, password)
+      Auth -> DB : Lookup user and verify password / active flag
+      Auth --> View : User or null
+      View -> View : failures = 0 if User else failures+1
+      opt failures >= login_limit
+        View -> View : locked_until=now + lock_minutes
+      end
+      View -> DB : Save LoginAttempt
+    end
+  end
+  opt authentication was attempted
+    alt valid active user
+      View -> Auth : login(request, user)
+      Auth -> DB : Update last_login / session machinery
+      View -> View : Set session expiry=session_minutes*60\nStore previous_login in session
+      View -> DB : Create Activity(event=login)
+      View --> Browser : Redirect /health/home/
+    else invalid credentials or inactive user
+      View --> Browser : Login page: check credentials
+    end
+  end
+end
+note over View,DB
+  select_for_update expresses intent in application code;
+  SQLite does not provide row-level SELECT FOR UPDATE locking.
+  This diagram does not imply stronger concurrency guarantees.
+end note
+@enduml

@@ -10,6 +10,11 @@ if (window.portalInitializedBody === document.body) return;
 window.portalInitializedBody = document.body;
 window.portalController?.abort();
 window.portalController=new AbortController();
+// Keep navigation and action links clickable without exporting them as drags.
+document.querySelectorAll('a[href]').forEach(link => link.draggable = false);
+document.addEventListener('dragstart', event => {
+  if (event.target.closest?.('a[href]')) event.preventDefault();
+}, {signal:window.portalController.signal});
 // Navigation reloads the inner workspace, whose scroll position browsers do not restore.
 if (document.querySelector("[data-user-management]")) {
   const key = "health-user-list-scroll";

@@ -1,0 +1,73 @@
+@startuml
+!include style.puml
+title Doc Pup - Request Ownership, Processing and Cancellation
+autonumber
+actor User
+participant "Browser / Doc Pup JS" as UI
+participant "docpup.api" as API
+participant "In-process JOBS / locks" as Jobs
+participant "Extract / ASR / answer helpers" as Helpers
+participant "Ollama / Qwen3" as LLM
+participant "Speech subprocess" as Speech
+User -> UI : Request briefing, form fill, transcription or reading
+UI -> API : POST /docpup/{action}/\nCSRF + task ID + request ID + data/file
+API -> API : Require login and POST; parse object; validate task ID
+API -> API : Read policy; check enabled, action and round limits
+API -> Jobs : Register Event under\n(user.pk, session_key, task, request)
+API -> Jobs : Acquire LOCK (non-TTS) or SPEECH_LOCK (TTS, capacity 3)\nwait at most 10 seconds; check cancellation
+alt invalid / duplicate / busy / cancelled
+  API --> UI : 400 {error}
+else acquired
+  alt action=brief
+    API -> API : Build server-side authorized context\nmember: own data; admin: permitted page context
+    API -> LLM : summarize(); chunk if context too large\nstream /api/chat; output JSON
+    LLM --> API : Grounded summary text
+  else action=file or asr
+    API -> Helpers : Exactly one file; extract within policy limits
+    Helpers -> Helpers : Audio -> cancellable Whisper CPU subprocess\nPDF/TXT/DOCX -> text extraction
+    Helpers --> API : Source text
+    opt action=file
+      API -> API : Merge evidence; require entry page and known kind
+    end
+  else action=answer
+    API -> Helpers : Check skip phrase; attempt direct_answer()
+    Helpers --> API : Skip / validated direct answer / unresolved
+  else action=tts
+    API -> Speech : Spawn worker(text[:500], lang, voice catalog)
+    Speech -> Speech : Try Edge TTS -> MP3\nfallback Windows SAPI -> WAV
+    Speech --> API : Audio file (45-second supervisor deadline)
+  end
+  opt file or unresolved answer
+    loop source fragments of 1200 characters, 150-character overlap
+      loop batches of two field descriptors
+        API -> LLM : llm(prompt, fields + source, Event)\nJSON output schema
+        LLM --> API : Candidate answers + clarification question
+        API -> Helpers : validated(schema, result, fragment)
+        Helpers --> API : Evidence-supported normalized answers
+      end
+    end
+    API -> API : Remove conflicting field values
+  end
+  group finally (also on processing errors)
+    opt model was used
+      API -> LLM : /api/generate keep_alive=0 (best effort)
+    end
+    API -> Jobs : Release lock; remove job
+    API -> API : Clear request data; temporary directories close
+  end
+  API --> UI : JSON text / answers / skip / evidence, or audio bytes
+end
+UI --> User : Display result / play audio / populate controls
+note over API,Jobs
+  Cancellation is an interrupting concurrent request, not a step after success.
+  See interaction 13 for the separate cancellation scenario.
+  JOBS and locks are process-local; no persistent queue or task table exists.
+end note
+note over User,UI
+  Form fill does not save Record. User reviews and submits separately.
+  File extraction: policy size limit (default 20 MB); text <=60000 chars;
+  PDF <=100 pages, no encryption or image-only input; audio <=600 seconds
+  for file mode; DOCX expanded size <=40 MB. No OCR path is implemented.
+  PupError -> 400; unexpected exception -> generic 503.
+end note
+@enduml

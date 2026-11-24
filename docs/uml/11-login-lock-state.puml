@@ -1,0 +1,32 @@
+@startuml
+!include style.puml
+skinparam roundcorner 18
+title LoginAttempt - Derived Lockout State Machine
+state "No attempt row" as Absent
+state "Available\nlocked_until = null" as Available
+state "Locked\nlocked_until > now" as Locked
+state "Expired, pending next attempt\nlocked_until <= now" as Expired
+[*] --> Absent
+Absent --> Available : login POST / get_or_create(username)
+Available : authenticate [success] / failures=0; save
+Available : authenticate [failure and failures+1 < limit] / failures++; save
+Available -down-> Locked : authenticate [failure and failures+1 >= limit]\n/ failures++; locked_until=now+lock_minutes; save
+Locked : login POST [now < locked_until] / render retry-later; skip authentication
+Locked -down-> Expired : at(locked_until)
+Expired -left-> Available : next login POST\n/ clear failures and lock; evaluate credentials
+Available --> Absent : reset / delete row
+Locked --> Absent : reset / delete row
+Expired --> Absent : reset / delete row
+note bottom of Expired
+  These states are derived from fields and current time,
+  not stored enum values. Expiration has no background timer:
+  the next login request performs cleanup and authentication.
+end note
+note bottom of Available
+  Authentication result also depends on password and User.is_active.
+  Account disable/enable is a separate User flag, not a lockout state.
+  Unknown usernames are tracked too; successful login keeps the row.
+  reset = administrator resets an ordinary member's password.
+  limit = current SiteOptions.login_limit.
+end note
+@enduml

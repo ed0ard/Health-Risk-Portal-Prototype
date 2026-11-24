@@ -1,0 +1,16 @@
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName Arial
+skinparam defaultFontSize 14
+skinparam shadowing false
+skinparam roundcorner 0
+skinparam ArrowColor #34495E
+skinparam LineColor #34495E
+skinparam classAttributeIconSize 0
+skinparam classBackgroundColor #F4F8FC
+skinparam componentBackgroundColor #F4F8FC
+skinparam packageBackgroundColor #FFFFFF
+skinparam noteBackgroundColor #FFF9E8
+skinparam noteBorderColor #B49A55
+skinparam sequenceMessageAlign center
+skinparam maxMessageSize 100
+hide empty members

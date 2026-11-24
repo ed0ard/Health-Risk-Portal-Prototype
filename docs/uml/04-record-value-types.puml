@@ -1,0 +1,74 @@
+@startuml
+!include style.puml
+hide circle
+title Record Values - Conceptual Types Encoded Inside JSON
+class Record {
+  +kind : String
+  +values : JSON
+  +form_version : String
+}
+class BaselineValues <<dataType>> {
+  +age : Integer {0..125}
+  +gender : Integer {0=female, 1=male}
+  +height : Real {100..270 cm}
+  +weight : Real {20..350 kg}
+  +smoking : Integer {0=no, 1=yes}
+  +drinking : Integer {0=no, 1=yes}
+}
+class BloodPressureValues <<dataType>> {
+  +systolic_bp : Real {40..300 mmHg}
+  +diastolic_bp : Real {30..200 mmHg}
+  +hbp_family : Integer {0=no, 1=yes}
+}
+class MoodValues <<dataType>> {
+  +depre_question_1..9 : Integer {each 0..3}
+  +/total : Integer {0..27}
+}
+class SleepValues <<dataType>> {
+  +psqi_question_1..7 : Integer {each 0..3}
+  +/total : Integer {0..21}
+}
+class Field {
+  +key : String
+  +en : String
+  +zh : String
+  +lo : Real = 0
+  +hi : Real = 3
+  +step : String = "1"
+  +choices : Tuple = ()
+}
+Record ..> BaselineValues : kind=baseline
+Record ..> BloodPressureValues : kind=hbp
+Record ..> MoodValues : kind=depre
+Record ..> SleepValues : kind=psqi
+Field ..> Record : catalog drives validation / display
+note bottom of BaselineValues
+  Submission constraint: 11 <= weight/(height/100)^2 <= 75.
+  Every numeric input must be finite and within field bounds.
+  step="1" requires integral values; step="any" permits decimals.
+end note
+note bottom of BloodPressureValues
+  Submission constraint: systolic_bp > diastolic_bp.
+  Record date must not be later than the local current date.
+end note
+note bottom of MoodValues
+  Q1 low mood; Q2 loss of interest; Q3 low energy;
+  Q4 sleep difficulty; Q5 appetite; Q6 self-worth;
+  Q7 concentration; Q8 physical discomfort; Q9 self-harm thoughts.
+  Bands: 0-4 low; 5-9 moderate; 10-27 high.
+  Latest Q9 > 0 produces a separate follow-up message.
+end note
+note bottom of SleepValues
+  source: waking at night, early waking, medication,
+  daytime sleepiness, dissatisfaction, daytime impact, mood impact.
+  legacy: a different seven-item wording set, same JSON keys.
+  record_fields() chooses labels using form_version.
+  Training rejects mixed sleep versions (except hbp).
+end note
+note bottom of Field
+  Frozen Python dataclass, not an ORM entity.
+  The four value types are documentation abstractions:
+  no corresponding Python classes or separate database tables.
+  "/total" denotes a calculated value, not a stored JSON key.
+end note
+@enduml

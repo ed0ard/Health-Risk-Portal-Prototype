@@ -818,6 +818,9 @@
   });
   button.addEventListener('pointerdown', e => {
     if (e.button !== 0) return;
+    // Pointer dragging must not acquire keyboard focus when modifier keys change.
+    e.preventDefault();
+    root.dataset.dragging = 'true';
     const r = root.getBoundingClientRect();
     drag = {
       x: e.clientX,
@@ -838,6 +841,7 @@
     }
   });
   button.addEventListener('pointerup', e => {
+    delete root.dataset.dragging;
     if (!drag) return;
     const moved = drag.moved;
     drag = null;
@@ -845,15 +849,23 @@
     if (!moved) return;
     suppress = true;
     savePosition();
-    root.style.pointerEvents = 'none';
+    root.style.visibility = 'hidden';
     const node = document.elementFromPoint(e.clientX, e.clientY);
-    root.style.pointerEvents = '';
+    root.style.visibility = '';
     if (node?.closest('.workspace')) run(j => follow(node, j, {
       x: e.clientX,
       y: e.clientY
     }), 'follow');
   });
   button.addEventListener('pointercancel', () => {
+    delete root.dataset.dragging;
+    drag = null;
+    root.dataset.motion = 'standing';
+    savePosition();
+  });
+  button.addEventListener('lostpointercapture', () => {
+    delete root.dataset.dragging;
+    if (!drag) return;
     drag = null;
     root.dataset.motion = 'standing';
     savePosition();

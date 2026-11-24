@@ -1,0 +1,61 @@
+@startuml
+!include style.puml
+title Risk Assessment - Model Selection, Eligibility and Fallback
+start
+:Receive authorized /health/alerts/ request;
+if (Administrator?) then (yes)
+  :Determine eligible years via population.eligible_years();
+  :Choose requested eligible year or latest eligible year;
+  :observations(Jan 1, Dec 31) for all participants\n(or empty groups if no eligible year);
+else (no)
+  :Read personal records across available history;
+endif
+:Group records by subject and day;
+:Compute latest_readings with applicable age data;
+repeat
+  :Next kind in [hbp, depre];
+  :active_fit(kind): read SiteOptions.selected_models;
+  if (Selection is none?) then (yes)
+    :fit=null;
+  else (no)
+    :Search specified Fit ID or newest-first candidates;
+    :Use first available artifact, or null;
+  endif
+  if (hbp and no fit?) then (yes)
+    :Use measurement-based READING categories\nfrom latest_readings;
+    note right
+      Adult office BP reference; higher category wins.
+      Age applicability is handled by reading_band().
+      This is a measured-reading category, not model probability.
+    end note
+  else (no)
+    :assessments(kind, groups, fit);
+    :Select latest eligible visit for each subject;
+    note right
+      Source models require all REQUIRED[kind] tables.
+      Mood additionally requires compatible sleep form_version.
+      Missing inputs / versions are skipped.
+    end note
+    if (Fit exists?) then (yes)
+      if (artifact.engine=source?) then (yes)
+        :Load joblib payload; align features; apply saved scaler;
+        :source_predictions(): predict_proba();
+      else (no)
+        :predict(): interpret legacy embedded artifact;
+      endif
+      if (kind=hbp?) then (yes)
+        :Use class-1 probability p;\nlow p<0.30 / moderate 0.30<=p<=0.70 / high p>0.70;
+      else (no)
+        :Choose class with maximum probability;
+      endif
+    else (no)
+      :Use mood questionnaire total;\n0-4 low / 5-9 moderate / 10-27 high;
+    endif
+  endif
+  :distribution(): count bands, proportions and chart data;
+  :For members, add personal result and latest observation;
+  :For mood Q9 > 0, add separate follow-up message;
+repeat while (Another kind?) is (yes) not (no)
+:Render risk cards and distributions;
+stop
+@enduml

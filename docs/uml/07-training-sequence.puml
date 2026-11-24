@@ -1,0 +1,69 @@
+@startuml
+!include style.puml
+title Model Training - Streaming Web Path and Persistence
+autonumber
+actor Administrator as Admin
+participant "views.training" as View
+participant "Streaming response\nchunks() / Queue" as Stream
+participant "worker thread" as Worker
+participant "learning.train" as Learn
+participant "original_models\n+ ModelTrainer helpers" as Trainer
+participant "ORM / SQLite" as DB
+participant "Artifact filesystem" as Files
+Admin -> View : POST /health/training/\nX-Training-Progress: 1
+View -> View : Require staff; validate kind, dates, method, dependency
+View -> Stream : stream_training(request, kind, start, end, validate, method)
+Stream ->> Worker : Start daemon thread when chunks are consumed
+Worker -> Worker : close_old_connections()
+Worker -> Learn : train(..., progress callback)
+Learn -> DB : Read Record in inclusive date range
+Learn -> Learn : Group by (subject, day); keep required complete visits
+note over Learn,Trainer
+  hbp: baseline + hbp; depre: baseline + psqi + depre;
+  age: all four categories. Minimum three complete visits.
+  Reject mixed sleep versions for depre / age.
+  method is passed through but train() always uses train_original().
+end note
+Learn -> Trainer : train_original(...)
+Trainer -> Trainer : ModelTrainer.__new__; assign model_id and DataFrame
+Trainer -> Trainer : _preprocess_data(): remove user_id; construct labels; scale
+note right of Trainer
+  RF: BP threshold defines binary target;
+  systolic / diastolic excluded from predictors.
+  XGBoost: mood total defines 3 bands;
+  mood answer columns excluded from predictors.
+  PCA: 3 components; no classification target.
+end note
+alt invalid samples / versions / classes / folds
+  Trainer --> Worker : ValueError (may originate in learning.train)
+  Worker -> Stream : Queue {error: reason}
+else training succeeds
+  Trainer -> Trainer : Fit RandomForest / XGBoost / PCA
+  opt validate and classification target exists
+    loop five StratifiedKFold splits
+      Trainer -> Trainer : Fit scaler + estimator pipeline within fold\nScore held-out rows; append accuracy * 100
+      Trainer -> Stream : progress callback -> Queue
+    end
+  end
+  Trainer -> Files : joblib.dump(model, scaler, feature_names)\ndata/models/{uuid}.pkl
+  Trainer -> DB : Create Fit(metadata, scores, sample count)
+  alt Fit creation fails
+    Trainer -> Files : Delete just-written artifact
+    Trainer --> Worker : Raise exception
+    Worker -> Stream : Queue {error: failed}
+  else Fit saved
+    Trainer --> Worker : Fit (via learning.train)
+    Worker -> DB : Create Activity(event=training)
+    Worker -> Stream : Queue {progress:100, url:...completed=Fit.id}
+  end
+end
+Worker -> Worker : finally: close_old_connections()
+Worker -> Stream : Queue sentinel None
+Stream --> Admin : NDJSON lines; terminate response
+note over View,Files
+  Without the progress header, the view calls train() and logs within transaction.atomic().
+  Streaming worker does not wrap Fit + Activity in one transaction.
+  Filesystem writes are outside database transactions; later failures can leave artifacts.
+  This is an in-process thread, not a durable job queue; disconnect is not a cancel protocol.
+end note
+@enduml

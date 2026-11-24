@@ -1,0 +1,56 @@
+@startuml
+!include style.puml
+title Default Local Windows Deployment
+node "Windows workstation" as Host <<device>> {
+  node "Web browser" as Browser <<executionEnvironment>> {
+    artifact "HTML / CSS / JavaScript\nChart.js + Doc Pup UI" as Front
+  }
+  node "Python 3.10 / Django\nrunserver 127.0.0.1:8000..8019" as Django <<executionEnvironment>> {
+    artifact "config + portal + training" as App
+    artifact "Training worker thread\nQueue / NDJSON" as Worker
+    artifact "Process-local JOBS\nLock + speech semaphore" as Locks
+  }
+  node "Ollama process\n127.0.0.1:11434" as Ollama <<executionEnvironment>> {
+    artifact "Qwen3-8B Q4_K_M\nmodel alias: qwen3:8b" as Qwen
+  }
+  node "ASR child process\nCPU / int8" as ASR <<executionEnvironment>> {
+    artifact "docpup_asr.py\nfaster-whisper + PyAV" as AsrCode
+  }
+  node "TTS child process" as TTS <<executionEnvironment>> {
+    artifact "docpup_speech.py\nEdge TTS / pyttsx3 SAPI5" as SpeechCode
+  }
+  artifact "db.sqlite3\nportal + auth + session tables" as DB
+  artifact "data/models/*.pkl\nweb-trained models" as Models
+  artifact "data/docpup/\nLLM / Whisper / tokenizer assets" as AI
+  artifact "data/source/\ndemo workbooks / accounts / models" as Source
+  artifact "Temporary directories\ninput / transcript / speech files" as Temp
+  artifact "start-site.cmd\nbootstrap + setup + health_serve" as Launcher
+}
+node "External speech service" as Edge {
+  artifact "Edge TTS service" as CloudTTS
+}
+node "Model / package download services\nbootstrap only" as Downloads
+Browser -- Django : loopback HTTP\nHTML / JSON / NDJSON / files
+Django -- Ollama : loopback HTTP\n/api/chat and /api/generate
+Django -- ASR : spawn / poll / kill
+Django -- TTS : spawn / poll / kill
+Django ..> DB : SQLite I/O
+Django ..> Models : joblib
+Django ..> Source : imported model artifacts
+Ollama ..> AI : model files
+ASR ..> AI : local Whisper-small
+ASR ..> Temp
+TTS ..> Temp
+TTS -- Edge : network speech synthesis\ntext sent to service
+Launcher ..> Downloads : fetch missing dependencies / models
+Launcher ..> Source : setup / import demonstration data
+Launcher ..> Django : start on available loopback port
+Launcher ..> Ollama : ensure local service
+note bottom of Host
+  Default development topology, not a production deployment specification.
+  HEALTH_PORTAL_DB may override the SQLite file path.
+  WSGI / ASGI entry files exist; health_serve starts Django runserver.
+  TTS can use an external service; inference and ASR run locally.
+  There is no implemented Redis, Celery, remote DB or durable task broker.
+end note
+@enduml
