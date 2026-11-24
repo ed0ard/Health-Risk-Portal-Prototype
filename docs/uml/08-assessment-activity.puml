@@ -53,7 +53,7 @@ repeat
     endif
   endif
   :distribution(): count bands, proportions and chart data;
-  :For members, add personal result and latest observation;
+  :For regular users, add personal result and latest observation;
   :For mood Q9 > 0, add separate follow-up message;
 repeat while (Another kind?) is (yes) not (no)
 :Render risk cards and distributions;

@@ -19,7 +19,7 @@ rectangle "Health Risk Portal" {
   usecase "Download individual PDF" as PDF
   usecase "Export 1-50 reports as ZIP" as Batch
   usecase "Train RF / XGBoost / PCA\noptional five-fold validation" as Train
-  usecase "Manage member accounts\ncreate / enable / disable / reset" as Accounts
+  usecase "Manage regular user accounts\ncreate / enable / disable / reset" as Accounts
   usecase "Configure models, sessions,\nlogin limits and Doc Pup" as Settings
   usecase "Review / export activity log\ndate filter; CSV" as Logs
   usecase "Inspect population overview\ncoverage / activity / availability" as Population
@@ -52,7 +52,7 @@ Brief -- LLM
 Read -- Speech
 note bottom of User
   Protected operations require an authenticated session.
-  Members: subject is forced to username.
+  Regular users: subject is forced to username.
   Administrators: may select a participant identifier.
   Public language switching does not require sign-in.
 end note
@@ -60,6 +60,6 @@ note bottom of Admin
   is_staff gates training, users, settings and logs.
   Reset / toggle only targets non-staff, non-superusers.
   Administrative risk view aggregates an eligible year;
-  member view uses personal record history.
+  regular user view uses personal record history.
 end note
 @enduml

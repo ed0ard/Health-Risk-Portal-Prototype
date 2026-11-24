@@ -26,7 +26,7 @@ note bottom of Available
   Authentication result also depends on password and User.is_active.
   Account disable/enable is a separate User flag, not a lockout state.
   Unknown usernames are tracked too; successful login keeps the row.
-  reset = administrator resets an ordinary member's password.
+  reset = administrator resets a regular user's password.
   limit = current SiteOptions.login_limit.
 end note
 @enduml

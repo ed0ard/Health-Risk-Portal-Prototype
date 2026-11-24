@@ -2,7 +2,7 @@
 !include style.puml
 title Health Reports - Individual PDF and Batch ZIP
 autonumber
-actor "Member / Administrator" as User
+actor "Regular user / Administrator" as User
 participant "views.portal / health_data" as View
 participant "reports.sections" as Sections
 participant "ORM + learning / original_models" as Data

@@ -19,7 +19,7 @@ alt invalid / duplicate / busy / cancelled
   API --> UI : 400 {error}
 else acquired
   alt action=brief
-    API -> API : Build server-side authorized context\nmember: own data; admin: permitted page context
+    API -> API : Build server-side authorized context\nregular user: own data; administrator: permitted page context
     API -> LLM : summarize(); chunk if context too large\nstream /api/chat; output JSON
     LLM --> API : Grounded summary text
   else action=file or asr
