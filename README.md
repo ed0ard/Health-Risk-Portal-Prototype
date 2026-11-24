@@ -1,8 +1,15 @@
+<div align="center">
+
 # Health Risk Portal Prototype
+
+[Quick start](#quick-start-windows) · [Features](#features) · [UML diagrams](https://ed0ard.github.io/Health-Risk-Portal-Prototype/) · [Project Layout](#project-layout)
+
+</div>
 
 A Django web application for public health screening and health data management with an integrated assistant, Doc Pup.
 
 Screening and education only. Results are not medical diagnoses and must not replace professional care.
+
 
 ## Features
 
