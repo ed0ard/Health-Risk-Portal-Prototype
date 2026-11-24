@@ -42,10 +42,8 @@ https://github.com/user-attachments/assets/794790b2-e096-4448-95ee-f9e7ea94329d
 <img width="2525" height="1272" alt="user-health-alert" src="https://github.com/user-attachments/assets/f70b7d76-f1c1-4f9e-89cb-2e03f6ae6019" /><br>
 
 * Download an A4 PDF health report.  
-<figure class="half">
-  <img width="428" height="606" alt="health-report_1" src="https://github.com/user-attachments/assets/78dac306-936e-4d63-8d74-0e5a12e30cc9" />
-  <img width="428" height="606" alt="health-report_2" src="https://github.com/user-attachments/assets/9d316241-44e0-4388-a86e-4a9b6daf1895" />
-</figure>
+
+<img width="1096" height="788" alt="health-report" src="https://github.com/user-attachments/assets/a57d84d4-5235-4372-b0f6-ff2611a0d9ec" />
 
 
 ### Administrator Features
