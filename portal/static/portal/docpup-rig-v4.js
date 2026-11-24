@@ -18,7 +18,7 @@
       const state = this.root.dataset.state,
         motion = this.root.dataset.motion,
         idle = Number(this.root.dataset.idle) || 0,
-        key = [state, motion, idle].join(':');
+        key = [state, motion, state === 'idle' ? idle : 0].join(':');
       if (this.key === key) return;
       this.key = key;
       clearTimeout(this.timer);

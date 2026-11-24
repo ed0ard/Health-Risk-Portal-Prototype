@@ -1,6 +1,7 @@
 document.querySelectorAll(".report [data-chart]").forEach(figure => {
   const chart = JSON.parse(figure.dataset.chart);
   const image = figure.querySelector("img");
+  if (!chart.rows?.length || !image) return;
   const tip = document.createElement("div");
   tip.className = "chart-tip";
   tip.hidden = true;
@@ -12,13 +13,19 @@ document.querySelectorAll(".report [data-chart]").forEach(figure => {
     figure.append(guide);
   }
   let selected = 0;
+  let rendered = -1;
+  let pendingFrame = 0;
   function hide() {
+    cancelAnimationFrame(pendingFrame);
+    pendingFrame = 0;
     tip.hidden = true;
     if (guide) guide.hidden = true;
   }
   function show(index, x, y) {
     selected = index;
     const row = chart.rows[index];
+    if (rendered !== index) {
+    rendered = index;
     const date = document.createElement("b");
     date.textContent = row[0];
     tip.replaceChildren(date);
@@ -29,6 +36,7 @@ document.querySelectorAll(".report [data-chart]").forEach(figure => {
       line.append(label,value);
       tip.append(line);
     });
+    }
     if (guide) {
       const bounds = image.getBoundingClientRect();
       const frame = figure.getBoundingClientRect();
@@ -46,6 +54,10 @@ document.querySelectorAll(".report [data-chart]").forEach(figure => {
     tip.style.top = Math.max(0, Math.min(y,figure.clientHeight-tip.offsetHeight)) + "px";
   }
   figure.addEventListener("pointermove", event => {
+    cancelAnimationFrame(pendingFrame);
+    pendingFrame = requestAnimationFrame(() => {
+    pendingFrame = 0;
+    if (!figure.isConnected) return;
     const bounds = image.getBoundingClientRect();
     const frame = figure.getBoundingClientRect();
     let index = 0;
@@ -55,6 +67,7 @@ document.querySelectorAll(".report [data-chart]").forEach(figure => {
       index = Math.round(Math.max(0,Math.min(1,relative))*(chart.rows.length-1));
     }
     show(index, event.clientX-frame.left+12, event.clientY-frame.top+12);
+    });
   });
   figure.addEventListener("pointerleave", hide);
   figure.addEventListener("focus", () => show(selected,12,32));

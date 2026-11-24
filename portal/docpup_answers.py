@@ -59,19 +59,25 @@ def normalized_value(field, value):
 
 def validated(schema, result, source):
     fields={f['key']:f for f in schema};valid=[]
+    source_normal = normal(source)
+    source_lines = [(normal(line), bool(UNKNOWN.search(line))) for line in re.split(r'[\n。;；]',source)]
+    catalog_keys = {f.key for group in FIELDS.values() for f in group}
+    if not isinstance(result,dict) or not isinstance(result.get('answers',[]),list):return valid
     for item in result.get('answers',[]):
+        if not isinstance(item,dict) or not isinstance(item.get('key'),str):continue
         field=fields.get(item.get('key'))
         if not field or item.get('status','answered')!='answered':continue
         try:
             evidence=str(item.get('evidence','')).strip();confidence=float(item.get('confidence',0))
-            if not evidence or UNKNOWN.search(evidence) or normal(evidence) not in normal(source):continue
+            quote = normal(evidence)
+            if not quote or UNKNOWN.search(evidence) or quote not in source_normal:continue
             if not math.isfinite(confidence) or not (.75 if field['type']=='text' else .70)<=confidence<=1:continue
             # Reject a quote lifted from a line explicitly marking that answer as missing.
-            lines=[line for line in re.split(r'[\n。;；]',source) if normal(evidence) in normal(line)]
-            if lines and all(UNKNOWN.search(line) for line in lines):continue
+            lines=[missing for line,missing in source_lines if quote in line]
+            if lines and all(lines):continue
             value=normalized_value(field,item.get('value'))
             if value=='':continue
-            if field['key'] in {f.key for group in FIELDS.values() for f in group} and field['type']=='choice':value=int(value)
+            if field['key'] in catalog_keys and field['type']=='choice':value=int(value)
             valid.append({'key':field['key'],'value':value})
         except (ValueError,TypeError,OverflowError):continue
     return valid

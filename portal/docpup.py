@@ -83,6 +83,22 @@ def transcribe(path, lang, cancelled=None, max_seconds=600):
 
 
 def extract(upload, lang, cancelled=None, max_bytes=MAX_FILE, max_seconds=600):
+    def check_cancelled():
+        if cancelled is not None and cancelled.is_set():
+            raise PupError('Cancelled / 已取消')
+
+    def join_text(parts):
+        chunks=[]
+        size=0
+        for part in parts:
+            check_cancelled()
+            size+=len(part)+(1 if chunks else 0)
+            if size>60000:
+                raise PupError('Text limit: 60000 characters / 文本最多60000字')
+            chunks.append(part)
+        return '\n'.join(chunks)
+
+    check_cancelled()
     ext = Path(upload.name).suffix.lower()
     if upload.size > max_bytes:
         raise PupError(f'File limit: {max_bytes//(1024*1024)} MB / 文件上限{max_bytes//(1024*1024)}MB')
@@ -91,7 +107,11 @@ def extract(upload, lang, cancelled=None, max_bytes=MAX_FILE, max_seconds=600):
     with tempfile.TemporaryDirectory(prefix='docpup-') as directory:
         path = Path(directory) / ('input' + ext)
         with path.open('wb') as out:
+            written=0
             for chunk in upload.chunks():
+                check_cancelled()
+                written+=len(chunk)
+                if written>max_bytes:raise PupError('File too large / 文件过大')
                 out.write(chunk)
         if ext in AUDIO:
             text = transcribe(path, lang, cancelled,max_seconds)
@@ -102,19 +122,21 @@ def extract(upload, lang, cancelled=None, max_bytes=MAX_FILE, max_seconds=600):
                 raise PupError('Encrypted PDF is not accepted / 不接受加密PDF')
             if len(reader.pages) > 100:
                 raise PupError('PDF limit: 100 pages / PDF最多100页')
-            text = '\n'.join(p.extract_text() or '' for p in reader.pages)
+            text = join_text(p.extract_text() or '' for p in reader.pages)
         elif ext == '.docx':
             from docx import Document
             with ZipFile(path) as archive:
                 if sum(i.file_size for i in archive.infolist()) > 40 * 1024 * 1024:
                     raise PupError('Expanded document too large / 解压后文档过大')
             doc = Document(path)
-            text = '\n'.join([p.text for p in doc.paragraphs] + [c.text for t in doc.tables for r in t.rows for c in r.cells])
+            from itertools import chain
+            text = join_text(chain((p.text for p in doc.paragraphs), (c.text for t in doc.tables for r in t.rows for c in r.cells)))
         else:
             try:
-                text = path.read_text(encoding='utf-8-sig')
+                with path.open(encoding='utf-8-sig') as source:text=source.read(60001)
             except UnicodeError:
-                text = path.read_text(encoding='gb18030')
+                with path.open(encoding='gb18030') as source:text=source.read(60001)
+        check_cancelled()
         if not text.strip():
             raise PupError('No readable text; image-only PDF is not accepted / 无可读文本，不接受纯图片PDF')
         if len(text) > 60000:
@@ -229,7 +251,11 @@ def configuration(request):
 @never_cache
 def api(request, action):
     try:
-        data = json.loads(request.POST.get('data','{}')) if request.FILES else json.loads(request.body or '{}')
+        try:
+            data = json.loads(request.POST.get('data','{}')) if request.FILES else json.loads(request.body or '{}')
+        except (ValueError,UnicodeError):
+            raise PupError('Invalid request / 无效请求')
+        if not isinstance(data,dict):raise PupError('Invalid request / 无效请求')
         task = str(data.get('task',''))
         if not re.fullmatch(r'[a-zA-Z0-9-]{8,80}',task):
             raise PupError('Invalid task / 无效任务')
@@ -253,6 +279,7 @@ def api(request, action):
         event = threading.Event()
         event.task_scoped=True
         with JOBS_LOCK:
+            if job_key in JOBS:raise PupError('Request already running / 请求正在处理中')
             JOBS[job_key] = event
         import time
         deadline = time.monotonic()+10
@@ -267,6 +294,7 @@ def api(request, action):
                 JOBS.pop(job_key,None)
             raise PupError('Local service busy or task cancelled / 本地服务忙或任务已取消')
         try:
+            if event.is_set():raise PupError('Cancelled / 已取消')
             lang = 'zh' if data.get('lang') == 'zh' else 'en'
             if action == 'tts':
                 text = str(data.get('text',''))[:500]
@@ -330,15 +358,15 @@ def api(request, action):
             if action=='answer':
                 prompt=base+'Fill the supplied form field from this direct spoken reply to its question. Interpret the whole reply, not keywords. Map its meaning to the exact option VALUE. Numbers must be numeric in the field units; dates YYYY-MM-DD; open text brief and faithful. Use the question time period; current-use questions concern current behavior. Occasional current behavior is present; explicitly discontinued behavior is absent. A past-to-present change is not a contradiction. Alcohol-free products are not alcoholic drinks. If the reply determines the answer, status=answered with the appropriate value, confidence and an exact supporting quote, and question="". Only genuinely missing information gives not_given/null; unresolved alternatives give uncertain/null and a specific question. Output only the required JSON.'
             candidates = {}; conflicts = set(); question = ''
+            field_batches = [[{**f,'options':[{k:v for k,v in o.items() if k!='aliases'} for o in f['options']]} for f in schema[index:index+2]] for index in range(0,len(schema),2)]
             for start in range(0,len(source),1200):
                 fragment = source[max(0,start-150):start+1200]
-                for index in range(0,len(schema),2):
-                    prompt_fields=[{**f,'options':[{k:v for k,v in o.items() if k!='aliases'} for o in f['options']]} for f in schema[index:index+2]]
+                for batch_index,prompt_fields in enumerate(field_batches):
                     payload={'fields':prompt_fields,'source':fragment}
                     if any(f['type']=='date' for f in prompt_fields):payload['reference_date']=timezone.localdate().isoformat()
                     result = llm(prompt,payload,event)
                     question = str(result.get('question',''))[:250] or question
-                    for answer in validated(schema,result,fragment):
+                    for answer in validated(schema[batch_index*2:batch_index*2+2],result,fragment):
                         key = answer['key']
                         if key in candidates and candidates[key]['value'] != answer['value']:
                             conflicts.add(key)

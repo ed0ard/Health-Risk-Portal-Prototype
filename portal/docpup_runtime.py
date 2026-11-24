@@ -42,4 +42,9 @@ def context_size():
 def fits(prompt,payload,event):
     content=json.dumps(payload,ensure_ascii=False,default=str,separators=(',',':'))
     schema=json.dumps(getattr(event,'output_schema','json'),ensure_ascii=False)
-    return tokens(content)+tokens(prompt)+tokens(schema)+256+700<=context_size()
+    # Only the invariant prompt/schema count is reused, scoped to this operation.
+    key=(prompt,schema)
+    if getattr(event,'token_budget_key',None)!=key:
+        event.token_budget_key=key
+        event.token_budget_overhead=tokens(prompt)+tokens(schema)+256+700
+    return tokens(content)+event.token_budget_overhead<=context_size()

@@ -27,6 +27,8 @@
   };
   let lastPosition = null;
   let savedBubbleScroll=0;
+  let taskState = 'idle';
+  let rejectionTimer = null;
   const zh = () => document.documentElement.lang.startsWith('zh');
   const t = (cn, en) => zh() ? cn : en;
   const csrf = () => document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
@@ -41,9 +43,15 @@
     waiting: ['等待补充文件', 'Waiting for another file']
   };
 
-  function state(name) {
+  function renderState(name) {
     root.dataset.state = name;
     root.querySelector('.pup-status').textContent = t(...(labels[name] || labels.idle));
+  }
+
+  function state(name) {
+    taskState = name;
+    // Audio/network callbacks continue updating the task underneath this feedback.
+    renderState(rejectionTimer === null ? name : 'rejecting');
   }
 
   function localize() {
@@ -52,7 +60,7 @@
     root.querySelector('[data-pup-close]').title = t('关闭', 'Close');
     root.querySelector('[data-pup-close]').setAttribute('aria-label', t('关闭', 'Close'));
     root.querySelector('[data-pup-skip]').textContent = t('跳过', 'Skip');
-    state(root.dataset.state || 'idle');
+    renderState(rejectionTimer === null ? taskState : 'rejecting');
   }
 
   function show(text, files = false) {
@@ -121,6 +129,8 @@
   }
 
   function cancel() {
+    clearTimeout(rejectionTimer);
+    rejectionTimer = null;
     if (job) {
       const j = job;
       job = null;
@@ -209,8 +219,7 @@
       await fn(j);
     } catch (e) {
       if (job === j && e.name !== 'AbortError') {
-        show(e.message);
-        state('rejecting');
+        reject(e.message);
       }
     } finally {
       if (job === j) {
@@ -721,7 +730,7 @@
         show(t('未提供的信息已留空。', 'Fields without information have been left blank.'));
         return;
       }
-      const message = t('还有可以补充的文件吗？拖入一个文件，或点击“跳过”。', 'Do you have another file? Drop one file, or select Skip.');
+      const message = t('还有可以补充的文件吗？\n拖入一个文件，或点击“跳过”。', 'Do you have another file? \nDrop one file, or select Skip.');
       show(message, true);
       const waiting = new Promise((resolve, reject) => {
         const timeout = setTimeout(() => resolve(null), 90000);
@@ -755,11 +764,12 @@
 
   function reject(message) {
     show(message);
-    const previous = root.dataset.state;
-    state('rejecting');
-    setTimeout(() => {
-      if (root.dataset.state === 'rejecting') state(job ? previous : 'idle');
+    clearTimeout(rejectionTimer);
+    rejectionTimer = setTimeout(() => {
+      rejectionTimer = null;
+      renderState(taskState);
     }, 1300);
+    renderState('rejecting');
   }
   root.addEventListener('dragover', e => {
     e.preventDefault();
@@ -888,6 +898,7 @@
       });
       if (!response.ok) throw Error('navigation');
       const html = new DOMParser().parseFromString(await response.text(), 'text/html');
+      if (controller.signal.aborted) return;
       const next = html.getElementById('docpup');
       if (!next) {
         cancel();
@@ -904,7 +915,7 @@
       mount(next, p);
       window.initPortal?.();
       for (const script of document.body.querySelectorAll('script[src]')) {
-        if (script.src.includes('/docpup.js')) continue;
+        if (window.portalScriptLoaded?.(script.src) || script.src.includes('/docpup.js')) continue;
         const copy = document.createElement('script');
         copy.src = script.src;
         copy.async = false;
@@ -916,7 +927,7 @@
   }
   document.addEventListener('click', e => {
     const a = e.target.closest('a[href]');
-    if (!a || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || a.target || a.download) return;
+    if (!a || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || a.target || a.hasAttribute('download')) return;
     const url = new URL(a.href, location.href);
     if (url.origin === location.origin && url.pathname.startsWith('/health/') && !url.searchParams.has('format')) {
       e.preventDefault();

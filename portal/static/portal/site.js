@@ -1,4 +1,13 @@
+function portalScriptLoaded(src) {
+  const path = new URL(src, location.href).pathname;
+  return (path.endsWith('/vendor/chart.umd.min.js') && !!window.Chart) ||
+    (path.endsWith('/docpup-rig-v4.js') && !!window.DocPupRig) ||
+    (path.endsWith('/docpup-audio.js') && !!window.DocPupAudio) ||
+    (path.endsWith('/docpup.js') && !!window.docPup);
+}
 function initPortal() {
+if (window.portalInitializedBody === document.body) return;
+window.portalInitializedBody = document.body;
 window.portalController?.abort();
 window.portalController=new AbortController();
 // Navigation reloads the inner workspace, whose scroll position browsers do not restore.
@@ -65,7 +74,7 @@ language?.addEventListener("submit", async event => {
   language.dataset.language = choice.value;
   // Preserve editable values by form and field position, never overwrite hidden actions.
   const saved = [...document.forms].map(form => [...form.elements].map(field =>
-    field.matches("input:not([type=hidden]),select,textarea") && !form.matches(".language")
+    field.matches("input:not([type=hidden]):not([type=file]),select,textarea") && !form.matches(".language")
       ? {value:field.value, checked:field.checked} : null));
   const successOpen = !!document.querySelector("[data-success][open]");
   const workspace = document.querySelector(".workspace");
@@ -96,6 +105,7 @@ language?.addEventListener("submit", async event => {
     });
     initPortal();
     for (const script of document.body.querySelectorAll("script[src]")) {
+      if (portalScriptLoaded(script.src)) continue;
       const fresh = document.createElement("script");
       fresh.async = false;
       fresh.src = script.src;
