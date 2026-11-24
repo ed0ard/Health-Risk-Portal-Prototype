@@ -264,7 +264,8 @@ class PortalTest(TestCase):
         from .views import data_values, DataValidationError
         valid={"age":"60","gender":"1","height":"170","weight":"65","smoking":"0","drinking":"0"}
         self.assertEqual(data_values("baseline",valid)["age"],60)
-        for change in ({"height":"99"},{"weight":"351"},{"age":"17"},{"age":"60.5"},{"weight":"nan"}):
+        self.assertEqual(data_values("baseline",dict(valid,age="12"))["age"],12)
+        for change in ({"height":"99"},{"weight":"351"},{"age":"-1"},{"age":"126"},{"age":"60.5"},{"weight":"nan"}):
             with self.assertRaises(DataValidationError):
                 data_values("baseline",dict(valid,**change))
         for change in ({"systolic_bp":"39"},{"diastolic_bp":"201"},{"diastolic_bp":"130"}):
