@@ -4,7 +4,7 @@ left to right direction
 title Health Risk Portal - Use Cases
 actor "Portal user" as User
 actor "Administrator" as Admin
-actor "Ollama / Qwen3" as LLM
+actor "Ollama / Spark-X2.6-4B" as LLM
 actor "Speech service\nEdge TTS / Windows SAPI" as Speech
 Admin --|> User
 rectangle "Health Risk Portal" {

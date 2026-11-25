@@ -7,7 +7,7 @@ participant "Browser / Doc Pup JS" as UI
 participant "docpup.api" as API
 participant "In-process JOBS / locks" as Jobs
 participant "Extract / ASR / answer helpers" as Helpers
-participant "Ollama / Qwen3" as LLM
+participant "Ollama / Spark-X2.6-4B" as LLM
 participant "Speech subprocess" as Speech
 User -> UI : Request briefing, form fill, transcription or reading
 UI -> API : POST /docpup/{action}/\nCSRF + task ID + request ID + data/file
@@ -20,8 +20,16 @@ alt invalid / duplicate / busy / cancelled
 else acquired
   alt action=brief
     API -> API : Build server-side authorized context\nregular user: own data; administrator: permitted page context
-    API -> LLM : summarize(); chunk if context too large\nstream /api/chat; output JSON
-    LLM --> API : Grounded summary text
+    API -> API : Add field meanings and versioned dated facts\nselect page and role-specific prompt
+    API -> LLM : summarize(); partition JSON if context too large\nSpark-X2.6-4B tokenizer budget; stream /api/chat with JSON Schema
+    LLM --> API : Candidate summary (two fields for administrator home)
+    API -> API : Check structure, presentation and questionnaire trend direction
+    opt detected output violation
+      API -> LLM : One bounded rewrite using verified facts\nno prepared answer or template response
+      LLM --> API : Revised candidate
+      API -> API : Revalidate; fail explicitly if still invalid
+    end
+    API -> API : Join administrator overview fields into two paragraphs
   else action=file or asr
     API -> Helpers : Exactly one file; extract within policy limits
     Helpers -> Helpers : Audio -> cancellable Whisper CPU subprocess\nPDF/TXT/DOCX -> text extraction

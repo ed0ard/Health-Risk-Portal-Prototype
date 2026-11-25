@@ -11,7 +11,7 @@ node "Windows workstation" as Host <<device>> {
     artifact "Process-local JOBS\nLock + speech semaphore" as Locks
   }
   node "Ollama process\n127.0.0.1:11434" as Ollama <<executionEnvironment>> {
-    artifact "Qwen3-8B Q4_K_M\nmodel alias: qwen3:8b" as Qwen
+    artifact "Spark-X2.6-4B" as Spark
   }
   node "ASR child process\nCPU / int8" as ASR <<executionEnvironment>> {
     artifact "docpup_asr.py\nfaster-whisper + PyAV" as AsrCode

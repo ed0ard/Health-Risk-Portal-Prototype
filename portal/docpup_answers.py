@@ -41,6 +41,7 @@ def normalized_value(field, value):
         if field.get('max') and value>field['max']:raise ValueError()
         return value
     if typ=='text':
+        if field['key']=='subject':return user_id(value)
         if not isinstance(value,str) or UNKNOWN.search(value):raise ValueError()
         return re.sub(r'[*#`]+','',value).strip()[:400]
     if typ in {'choice','boolean','multichoice'}:
@@ -76,6 +77,7 @@ def validated(schema, result, source):
             lines=[missing for line,missing in source_lines if quote in line]
             if lines and all(lines):continue
             value=normalized_value(field,item.get('value'))
+            if field['key']=='subject' and value!=user_id(evidence):continue
             if value=='':continue
             if field['key'] in catalog_keys and field['type']=='choice':value=int(value)
             valid.append({'key':field['key'],'value':value})
@@ -148,17 +150,44 @@ def quantity(field, source):
         if match:return round(spoken_number(match[1])*factor,3)
     return spoken_number(text)
 
+def user_id(source):
+    """Normalize a single spoken identifier without converting prose into a username."""
+    if isinstance(source,int) and not isinstance(source,bool):source=str(source)
+    if not isinstance(source,str) or UNKNOWN.search(source):raise ValueError()
+    text=unicodedata.normalize('NFKC',source).strip().rstrip('。.!！')
+    text=re.sub(r'^(?:(?:my|the)\s+)?(?:user\s*id|user\s+identifier|id)\b\s*(?:(?:is|equals)\s+|[:：]\s*)?', '',text,flags=re.I)
+    text=re.sub(r'^(?:我的?|该)?(?:用户\s*(?:编号|ID|id)|用户号|编号)\s*(?:是|为|[:：])?\s*','',text)
+    text=re.sub(r'^(?:我的?|该)?(?:ID|id)\s*(?:是|为|[:：])\s*','',text)
+    text=text.strip().strip('"“”').strip()
+    if not text or len(text)>150:raise ValueError()
+    if re.fullmatch(r'[0-9]+',text):return text
+    digits={c:str(i) for i,c in enumerate('零一二三四五六七八九')};digits.update({'〇':'0','两':'2'})
+    if all(c in digits for c in text):return ''.join(digits[c] for c in text)
+    singles=dict(zip('zero one two three four five six seven eight nine'.split(),map(str,range(10))));singles['oh']='0'
+    words=text.lower().replace('-',' ').split()
+    if words and all(w in singles or re.fullmatch(r'[0-9]',w) for w in words):
+        return ''.join(singles.get(w,w) for w in words)
+    vocabulary=set(singles)|set('ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen twenty thirty forty fifty sixty seventy eighty ninety hundred thousand and'.split())
+    if (words and all(w in vocabulary for w in words)) or re.fullmatch(r'[零〇一二两三四五六七八九十百千]+',text):
+        number=spoken_number(text)
+        if not math.isfinite(number) or number<0 or int(number)!=number:raise ValueError()
+        return str(int(number))
+    # Keep explicitly spelled alphanumeric identifiers, including case and zeros.
+    if re.fullmatch(r'[\w.@+-]{1,150}',text) and any(c.isalpha() for c in text) and not re.search(r'用户|编号|我的|我是|今年|请填|就是',text):return text
+    raise ValueError()
+
+
 def direct_answer(schema, source):
     """Unambiguous single-question voice answers need no probabilistic conversion."""
     if len(schema)!=1 or UNKNOWN.search(source):return []
     field=schema[0];text=source.strip().rstrip('。.!！')
     try:
+        if field['key']=='subject':return [{'key':'subject','value':user_id(text)}]
         if field['type']=='number':
             value=normalized_value(field,quantity(field,text))
         elif field['type']=='date':
             value=normalized_value(field,text)
         else:
-            if field['key']=='subject' and re.fullmatch(r'[\w.@+-]{1,150}',text):return [{'key':'subject','value':text}]
             if normal(text) in {'yes','是','有','true','正确','对'}:text='Yes' if field['type']!='boolean' else True
             elif normal(text) in {'no','否','没有','false','错误','错'}:text='No' if field['type']!='boolean' else False
             value=normalized_value(field,text)

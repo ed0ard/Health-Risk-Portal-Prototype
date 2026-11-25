@@ -18,7 +18,7 @@ package "Django application process" {
   component "ORM model layer\nportal.models + Django auth/session" as ORM
   component "Field catalog\nportal.catalog\nFIELDS / record_fields / NAV" as Catalog
 }
-component "Local inference\nOllama:11434 / Qwen3" as Ollama
+component "Local inference\nOllama:11434 / Spark-X2.6-4B" as Ollama
 component "ASR subprocess\ndocpup_asr.py / faster-whisper" as ASR
 component "Speech subprocess\ndocpup_speech.py" as TTS
 artifact "db.sqlite3" as DB

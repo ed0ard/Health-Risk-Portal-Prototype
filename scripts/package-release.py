@@ -4,9 +4,22 @@ from pathlib import Path
 from zipfile import ZipFile,ZIP_DEFLATED
 
 ROOT=Path(__file__).resolve().parents[1]
-EXCLUDED={'.git','.venv','venv','.runtime','__pycache__','.pytest_cache','.mypy_cache','.ruff_cache','.cache','dist','build','node_modules','staticfiles','media','test-results','playwright-report','tests','dev_checks'}
+EXCLUDED={'.git','.venv','venv','.runtime','__pycache__','.pytest_cache','.mypy_cache','.ruff_cache','.cache','dist','build','node_modules','staticfiles','media','test-results','playwright-report','tests','dev_checks','Qwen3'}
 SUFFIXES={'.pyc','.pyo','.log','.sqlite3','.db','.zip','.gguf','.onnx','.wav','.mp3','.webm','.partial','.incomplete'}
 LOCAL_ONLY={'requirements-dev.txt','browser_testing.py','docpup_regression_v4.py','docpup-rig.js'}
+
+
+# Keep previously published tests, but do not ship new development-only checks.
+PUBLISHED_TESTS={'portal/tests.py'}
+
+def development_only(relative):
+    if relative in PUBLISHED_TESTS:return False
+    path=Path(relative);name=path.name.lower()
+    return ('tests' in path.parts or name=='requirements-dev.txt' or
+            name=='tests.py' or name.startswith(('test_','test-')) or
+            name.endswith(('_test.py','_tests.py','_check.py')) or
+            'regression' in name or name=='browser_testing.py')
+
 
 def files():
     for directory,folders,names in os.walk(ROOT,followlinks=False):
@@ -14,7 +27,8 @@ def files():
         folders[:]=sorted(name for name in folders if name not in EXCLUDED and not (base/name).is_symlink() and (base/name).relative_to(ROOT).as_posix()!='data/docpup')
         for name in sorted(names):
             path=base/name
-            if path.is_symlink() or path.suffix in SUFFIXES or name.startswith(('.env','~$','test')) or 'regression' in name or name.endswith('_check.py') or name in LOCAL_ONLY or '.sqlite3-' in name:continue
+            if development_only(path.relative_to(ROOT).as_posix()):continue
+            if path.is_symlink() or path.suffix in SUFFIXES or name.startswith(('.env','~$')) or 'regression' in name or name in LOCAL_ONLY or '.sqlite3-' in name:continue
             if path.resolve().is_relative_to(ROOT):yield path
 
 def main():
